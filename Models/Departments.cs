@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace TireInventory.Models;
 
 [Table("tbl_BO_ItemDepartment")]
-public partial class Department
+public partial class Departments
 {
     public long Id { get; set; }
 

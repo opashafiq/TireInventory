@@ -9,7 +9,7 @@ namespace TireInventory.Data
         public ApplicationDBContext(DbContextOptions<ApplicationDBContext> dbContextOptions) : base(dbContextOptions) { }
 
         public DbSet<Distributors> Distributors { get; set; }
-        public DbSet<Department> TblBoItemDepartments { get; set; }
+        public DbSet<Departments> Departments { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

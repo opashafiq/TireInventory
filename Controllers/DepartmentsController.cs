@@ -24,16 +24,16 @@ namespace TireInventory.Controllers
 
         // GET: api/TblBoItemDepartment
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Department>>> GetTblBoItemDepartment()
+        public async Task<ActionResult<IEnumerable<Departments>>> GetTblBoItemDepartment()
         {
-            return await _context.TblBoItemDepartments.ToListAsync();
+            return await _context.Departments.ToListAsync();
         }
 
         // GET: api/TblBoItemDepartment/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Department>> GetTblBoItemDepartment(long id)
+        public async Task<ActionResult<Departments>> GetTblBoItemDepartment(long id)
         {
-            var tblBoItemDepartment = await _context.TblBoItemDepartments.FindAsync(id);
+            var tblBoItemDepartment = await _context.Departments.FindAsync(id);
 
             if (tblBoItemDepartment == null)
             {
@@ -46,7 +46,7 @@ namespace TireInventory.Controllers
         // PUT: api/TblBoItemDepartment/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutTblBoItemDepartment(long id, Department tblBoItemDepartment)
+        public async Task<IActionResult> PutTblBoItemDepartment(long id, Departments tblBoItemDepartment)
         {
             if (id != tblBoItemDepartment.Id)
             {
@@ -77,9 +77,9 @@ namespace TireInventory.Controllers
         // POST: api/TblBoItemDepartment
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Department>> PostTblBoItemDepartment(Department tblBoItemDepartment)
+        public async Task<ActionResult<Departments>> PostTblBoItemDepartment(Departments tblBoItemDepartment)
         {
-            _context.TblBoItemDepartments.Add(tblBoItemDepartment);
+            _context.Departments.Add(tblBoItemDepartment);
             await _context.SaveChangesAsync();
 
             return CreatedAtAction("GetTblBoItemDepartment", new { id = tblBoItemDepartment.Id }, tblBoItemDepartment);
@@ -89,13 +89,13 @@ namespace TireInventory.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTblBoItemDepartment(long id)
         {
-            var tblBoItemDepartment = await _context.TblBoItemDepartments.FindAsync(id);
+            var tblBoItemDepartment = await _context.Departments.FindAsync(id);
             if (tblBoItemDepartment == null)
             {
                 return NotFound();
             }
 
-            _context.TblBoItemDepartments.Remove(tblBoItemDepartment);
+            _context.Departments.Remove(tblBoItemDepartment);
             await _context.SaveChangesAsync();
 
             return NoContent();
@@ -103,7 +103,7 @@ namespace TireInventory.Controllers
 
         private bool TblBoItemDepartmentExists(long id)
         {
-            return _context.TblBoItemDepartments.Any(e => e.Id == id);
+            return _context.Departments.Any(e => e.Id == id);
         }
     }
 }
