@@ -1,0 +1,110 @@
+# Visual Studio / .NET / ASP.NET Core (.NET 8) gitignore
+# Recommended for Visual Studio 2022, .NET SDK projects, and ASP.NET Core web apps
+
+# Build artifacts
+/bin/
+/obj/
+/out/
+
+# VS temporary files, caches and local workspace settings
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Rider
+.idea/
+*.sln.iml
+*.DotSettings.user
+
+# Visual Studio Code
+.vscode/
+
+# NuGet packages and caches
+*.nupkg
+packages/
+project.lock.json
+project.fragment.lock.json
+.nuget/
+.nuget/packages/
+
+# Dotnet tools folder
+.dotnet/
+.dotnet/tools/
+
+# Publish output
+Publish/
+publish/
+*.Publish.xml
+*.azurePubxml
+app.publish/
+
+# MSBuild generated files
+\*.log
+*.vspscc
+*.vssscc
+
+# User-specific files (secrets/user settings)
+secrets.json
+secrets.*.json
+# If you use launchSettings in development and do NOT want them tracked, uncomment:
+# Properties/launchSettings.json
+
+# ASP.NET Scaffolding
+ScaffoldingReadMe.txt
+
+# Rider / ReSharper caches
+_ReSharper*/
+*__ReSharper*/
+
+/* JetBrains Rider caches and settings */
+.idea/
+*.idea/
+
+# EF Core Migrations: typically tracked — do NOT ignore Migrations/ unless you intentionally generate them at build time
+# (leave migrations in source control so database schema changes are preserved)
+
+# Logs, temporary files, crash dumps
+*.log
+*.tlog
+*.tmp
+*.temp
+*.cache
+*.stackdump
+
+# OS generated files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# Backup and editor swap files
+*~
+*.swp
+*.swo
+*.bak
+*.orig
+
+# Certificates, publish profiles, and personal settings
+*.pfx
+*.publishsettings
+PublishProfiles/
+
+# Package managers (uncomment if used)
+node_modules/
+bower_components/
+
+# Coverage / Test results
+coverage/
+*.coverage
+*.coveragexml
+TestResults/
+
+# JetBrains Rider local history
+.idea/.idea.*
+
+# Optional: Ignore local-only appsettings overrides (enable if you keep secrets or machine-specific settings there)
+# appsettings.*.Local.json
+# appsettings.*.Secrets.json
+
+# End of .gitignore

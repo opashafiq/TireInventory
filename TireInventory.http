@@ -1,0 +1,6 @@
+@TireInventory_HostAddress = http://localhost:5200
+
+GET {{TireInventory_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
