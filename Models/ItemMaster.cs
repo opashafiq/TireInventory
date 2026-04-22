@@ -8,7 +8,8 @@ public partial class ItemMaster
 {
     public long Id { get; set; }
 
-    public long tbim_ItemCategory { get; set; }
+    [Column("tbim_ItemCategory")]
+    public long tbim_ItemCategoryId { get; set; }
 
     public string tbim_Size { get; set; } = null!;
 
@@ -45,7 +46,8 @@ public partial class ItemMaster
 
     public long tbim_LocationId { get; set; }
 
-    public virtual tbl_DistributorList? tbim_Distributor { get; set; }
+    public virtual Distributors? tbim_Distributor { get; set; }
 
     public virtual LocationDetails tbim_Location { get; set; } = null!;
+    public virtual Departments tbim_ItemCategory { get; set; } = null!;
 }

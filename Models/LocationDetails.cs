@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -10,7 +11,8 @@ public partial class LocationDetails
 
     public string tbld_LocationName { get; set; } = null!;
 
-    public int tbld_BusinessId { get; set; }
+    [Column("tbld_BusinessId")]
+    public long CompanyInfoId { get; set; }
 
     public string? tbld_Address1 { get; set; }
 
@@ -32,7 +34,7 @@ public partial class LocationDetails
 
     public DateTime SetDate { get; set; }
 
-    public virtual CompanyInfo IdNavigation { get; set; } = null!;
+    public virtual CompanyInfo CompanyInfo { get; set; } = null!;
 
     public virtual ICollection<ItemMaster> tbl_ItemMasters { get; set; } = new List<ItemMaster>();
 }

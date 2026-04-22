@@ -11,16 +11,23 @@ namespace TireInventory.Data
         public DbSet<Distributors> Distributors { get; set; }
         public DbSet<Departments> Departments { get; set; }
 
+        // Existing DbSets
+        public DbSet<CompanyInfo> CompanyInfos { get; set; }
+        public DbSet<ItemMaster> ItemMasters { get; set; }
+        public DbSet<LocationDetails> LocationDetails { get; set; }
+        public DbSet<TaxId> TaxIds { get; set; }
+        public DbSet<ExpenseHead> ExpenseHeads { get; set; }
+        public DbSet<PaymentNames> PaymentNames { get; set; }
+
+        // Added DbSets for new controllers
+        public DbSet<RefundMethodNames> RefundMethodNames { get; set; }
+        public DbSet<TaxRateModified> TaxRateModifieds { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            // Configure one-to-one between TblBoBusinessInformation and TblBoLocationDetail.
-            // Assumes TblBoLocationDetail.Id is both the PK and the FK that references TblBoBusinessInformation.Id.
-
-
-            // If you have other generated relationships or naming conventions to preserve,
-            // add them here e.g. table mappings, column names, etc.
+            // preserve any custom model configuration here (one-to-one, table mappings, etc.)
         }
     }
 }
