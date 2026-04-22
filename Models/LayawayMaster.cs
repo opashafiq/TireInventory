@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TireInventory.Models;
 
-public partial class InvoiceMaster
+public partial class LayawayMaster
 {
     public long Id { get; set; }
 
@@ -57,11 +57,7 @@ public partial class InvoiceMaster
 
     public string? tbim_CompanyAddress { get; set; }
 
-    public bool tbim_Item_Delete_after_Invoice_Create { get; set; }
-
-    public long? tbim_LaywayNo { get; set; }
-
-    public DateTime? tbim_LaywayDate { get; set; }
+    public bool tbim_Item_Delete_after_Layaway_Create { get; set; }
 
     public string UserName { get; set; } = null!;
 
@@ -83,13 +79,14 @@ public partial class InvoiceMaster
     /// F: Full Refund, P : Partial Refund, N: Not Refund
     /// </summary>
     public string? tbim_RefundType { get; set; }
-    [Column("tbim_LocationId")]
-    public long? tbim_LocationDetailsId { get; set; }
+
+    public long? tbim_LocationId { get; set; }
 
     // Foreign keys
-    public virtual LocationDetails? tbim_LocationDetails { get; set; }
     public virtual TaxId? tbim_Tax { get; set; }
-    public virtual ICollection<InvoiceDetails> tbl_Invoice_Details { get; set; } = new List<InvoiceDetails>();
+    public virtual LocationDetails? tbim_Location { get; set; }
 
-    public virtual ICollection<InvoicePayments> tbl_Invoice_Payments { get; set; } = new List<InvoicePayments>();
+    public virtual ICollection<LayawayDetails> tbl_Layaway_Details { get; set; } = new List<LayawayDetails>();
+
+    public virtual ICollection<LayawayPayments> tbl_Layaway_Payments { get; set; } = new List<LayawayPayments>();
 }
