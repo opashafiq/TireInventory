@@ -18,9 +18,17 @@ namespace TireInventory.Data
         public DbSet<TaxId> TaxIds { get; set; }
         public DbSet<ExpenseHead> ExpenseHeads { get; set; }
         public DbSet<PaymentNames> PaymentNames { get; set; }
-
-        // Added DbSets for new controllers
         public DbSet<RefundMethodNames> RefundMethodNames { get; set; }
+
+        // Invoice-related DbSets
+        public DbSet<InvoiceMaster> InvoiceMasters { get; set; }
+        public DbSet<InvoiceDetails> InvoiceDetails { get; set; }
+        public DbSet<InvoicePayments> InvoicePayments { get; set; }
+        public DbSet<InvoiceRefundMaster> InvoiceRefundMasters { get; set; }
+        public DbSet<InvoiceRefundDetails> InvoiceRefundDetails { get; set; }
+        public DbSet<InvoiceRefundPayments> InvoiceRefundPayments { get; set; }
+
+        // Existing other DbSets...
         public DbSet<TaxRateModified> TaxRateModifieds { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
