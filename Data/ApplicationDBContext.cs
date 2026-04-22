@@ -11,7 +11,7 @@ namespace TireInventory.Data
         public DbSet<Distributors> Distributors { get; set; }
         public DbSet<Departments> Departments { get; set; }
 
-        // Existing DbSets
+        // Previously added DbSets...
         public DbSet<CompanyInfo> CompanyInfos { get; set; }
         public DbSet<ItemMaster> ItemMasters { get; set; }
         public DbSet<LocationDetails> LocationDetails { get; set; }
@@ -19,6 +19,7 @@ namespace TireInventory.Data
         public DbSet<ExpenseHead> ExpenseHeads { get; set; }
         public DbSet<PaymentNames> PaymentNames { get; set; }
         public DbSet<RefundMethodNames> RefundMethodNames { get; set; }
+        public DbSet<TaxRateModified> TaxRateModifieds { get; set; }
 
         // Invoice-related DbSets
         public DbSet<InvoiceMaster> InvoiceMasters { get; set; }
@@ -28,8 +29,15 @@ namespace TireInventory.Data
         public DbSet<InvoiceRefundDetails> InvoiceRefundDetails { get; set; }
         public DbSet<InvoiceRefundPayments> InvoiceRefundPayments { get; set; }
 
-        // Existing other DbSets...
-        public DbSet<TaxRateModified> TaxRateModifieds { get; set; }
+
+        // Layaway-related DbSets
+        public DbSet<LayawayMaster> LayawayMasters { get; set; }
+        public DbSet<LayawayDetails> LayawayDetails { get; set; }
+        public DbSet<LayawayPayments> LayawayPayments { get; set; }
+        public DbSet<LayawayRefundMaster> LayawayRefundMasters { get; set; }
+        public DbSet<LayawayRefundDetails> LayawayRefundDetails { get; set; }
+        public DbSet<LayawayRefundPayments> LayawayRefundPayments { get; set; }
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

@@ -16,5 +16,4 @@ public partial class LayawayRefundPayments
     public DateTime? tbirp_Date { get; set; }
 
     public virtual LayawayRefundMaster tbirp_Layaway_Refund { get; set; } = null!;
-    public virtual RefundMethodNames tbirp_RefundMethod { get; set; } = null!;
 }
