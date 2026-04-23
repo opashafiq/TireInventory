@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TireInventory.Data;
 using TireInventory.Models;
@@ -8,6 +7,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -43,15 +43,7 @@ builder.Services.AddAuthentication
         }
         );
 
-
-//////////////////////////////////////////////////
-
-
-//////////////////////////////////////////////////
-///
-
-//// For putting bearer token through swagger
-
+//// For putting bearer token through swagger (single registration)
 builder.Services.AddSwaggerGen(opt =>
 {
     opt.SwaggerDoc("v1", new OpenApiInfo { Title = "MyAPI", Version = "v1" });
@@ -81,15 +73,8 @@ builder.Services.AddSwaggerGen(opt =>
     });
 });
 
-
-//////////////////////////////////////////////
-///
-
-
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
@@ -97,11 +82,16 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "MyAPI v1");
+    });
 }
 
 app.UseHttpsRedirection();
 
+// IMPORTANT: enable authentication middleware before authorization
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
@@ -110,7 +100,5 @@ app.MapControllers();
 /**********************************************/
 var startup = new Startup(builder.Configuration); // My custom startup class.
 startup.Configure(app, app.Environment, app.Services); // Configure the HTTP request pipeline.
-
-////////////////////////////////////////////////////////////
 
 app.Run();
