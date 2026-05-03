@@ -11,7 +11,7 @@ public partial class InvoiceDetails
 
     public long? tbid_ItemId { get; set; }
 
-    public int? tbid_ItemCategory { get; set; }
+    public long? tbid_ItemCategory { get; set; }
 
     public string? tbid_DepartmentName { get; set; }
 

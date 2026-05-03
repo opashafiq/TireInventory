@@ -1,3 +1,6 @@
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -30,7 +33,10 @@ namespace TireInventory.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<InvoiceRefundMaster>> GetInvoiceRefundMaster(long id)
         {
-            var invoiceRefundMaster = await _context.InvoiceRefundMasters.FindAsync(id);
+            var invoiceRefundMaster = await _context.InvoiceRefundMasters
+                .Include(m => m.tbl_Invoice_Refund_Details)
+                .Include(m => m.tbl_Invoice_Refund_Payments)
+                .FirstOrDefaultAsync(m => m.Id == id);
 
             if (invoiceRefundMaster == null)
             {
@@ -78,6 +84,92 @@ namespace TireInventory.Controllers
             await _context.SaveChangesAsync();
 
             return CreatedAtAction("GetInvoiceRefundMaster", new { id = invoiceRefundMaster.Id }, invoiceRefundMaster);
+        }
+
+        // POST: api/InvoiceRefundMaster/CreateRefund
+        // Mirrors invoice flow: insert refund master first, then insert refund details and refund payments with FK set to refundMaster.Id
+        [HttpPost("CreateRefund")]
+        public async Task<ActionResult<InvoiceRefundMaster>> CreateRefund(CreateInvoiceRefundDto dto)
+        {
+            if (dto == null) return BadRequest();
+
+            var refundMaster = dto.Refund ?? new InvoiceRefundMaster();
+
+            // Insert master to obtain generated Id
+            _context.InvoiceRefundMasters.Add(refundMaster);
+            await _context.SaveChangesAsync();
+
+            // DETAILS: set FK and enrich from ItemMaster/Departments/Distributors as before
+            var details = dto.RefundDetails ?? new List<InvoiceRefundDetails>();
+
+            foreach (var d in details)
+            {
+                d.tbird_InvoiceRefundId = refundMaster.Id;
+                d.Id = 0;
+                d.tbird_InvoiceRefund = null;
+
+                if (d.tbird_ItemId.HasValue)
+                {
+                    var itemMaster = await _context.ItemMasters.FindAsync(d.tbird_ItemId.Value);
+                    if (itemMaster != null)
+                    {
+                        try
+                        {
+                            d.tbird_ItemCategory = Convert.ToInt32(itemMaster.tbim_ItemCategoryId);
+                        }
+                        catch
+                        {
+                            d.tbird_ItemCategory = null;
+                        }
+
+                        var dept = await _context.Departments.FindAsync(itemMaster.tbim_ItemCategoryId);
+                        d.tbird_DepartmentName = dept?.Tbid_DepartmentName;
+
+                        d.tbird_Size = itemMaster.tbim_Size;
+                        d.tbird_Brand = itemMaster.tbim_Brand;
+                        d.tbird_Series = itemMaster.tbim_Series;
+                        d.tbird_Bolt = itemMaster.tbim_Bolt;
+                        d.tbird_HoleS = itemMaster.tbim_HoleS;
+                        d.tbird_Zone = itemMaster.tbim_Zone;
+                        d.tbird_DistributorId = itemMaster.tbim_DistributorId;
+
+                        if (itemMaster.tbim_DistributorId.HasValue)
+                        {
+                            var distributor = await _context.Distributors.FindAsync(itemMaster.tbim_DistributorId.Value);
+                            d.tbird_DistributorName = distributor?.Name;
+                        }
+                    }
+                }
+            }
+
+            if (details.Count > 0)
+            {
+                _context.InvoiceRefundDetails.AddRange(details);
+                await _context.SaveChangesAsync();
+            }
+
+            // PAYMENTS: set FK to created refund master Id and insert
+            var payments = dto.RefundPayments ?? new List<InvoiceRefundPayments>();
+            foreach (var p in payments)
+            {
+                p.tbirp_InvoiceRefundId = refundMaster.Id;
+                p.Id = 0;
+                p.tbirp_InvoiceRefund = null;
+            }
+
+            if (payments.Count > 0)
+            {
+                _context.InvoiceRefundPayments.AddRange(payments);
+                await _context.SaveChangesAsync();
+            }
+
+            // Return created refund master including its details and payments
+            var created = await _context.InvoiceRefundMasters
+                .Include(m => m.tbl_Invoice_Refund_Details)
+                .Include(m => m.tbl_Invoice_Refund_Payments)
+                .FirstOrDefaultAsync(m => m.Id == refundMaster.Id);
+
+            return CreatedAtAction(nameof(GetInvoiceRefundMaster), new { id = refundMaster.Id }, created ?? refundMaster);
         }
 
         // DELETE: api/InvoiceRefundMaster/5

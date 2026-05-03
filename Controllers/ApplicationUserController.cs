@@ -27,7 +27,17 @@ namespace TireInventory.Controllers
             _context = context;
         }
 
-        
+        // GET: api/ApplicationUser/roles
+        [HttpGet("roles")]
+        public async Task<ActionResult<IEnumerable<string>>> GetRoles()
+        {
+            var roles = await _roleManager.Roles
+                .OrderBy(r => r.Name)
+                .Select(r => r.Name ?? string.Empty)
+                .ToListAsync();
+
+            return Ok(roles);
+        }
 
         // GET: api/ApplicationUser
         [HttpGet]
@@ -43,6 +53,10 @@ namespace TireInventory.Controllers
                 {
                     Id = u.Id,
                     UserName = u.UserName ?? string.Empty,
+                    FirstName = u.FirstName ?? string.Empty,
+                    LastName = u.LastName ?? string.Empty,
+                    IsActive = u.IsActive,
+                    LocationId = u.LocationId,
                     Email = u.Email ?? string.Empty,
                     Roles = roles
                 });
@@ -66,6 +80,10 @@ namespace TireInventory.Controllers
             {
                 Id = user.Id,
                 UserName = user.UserName,
+                FirstName = user.FirstName ?? string.Empty,
+                LastName = user.LastName ?? string.Empty, 
+                IsActive = user.IsActive,
+                LocationId = user.LocationId,
                 Email = user.Email,
                 Roles = roles
             });
@@ -80,6 +98,10 @@ namespace TireInventory.Controllers
             var user = new ApplicationUser
             {
                 UserName = dto.UserName,
+                FirstName = dto.FirstName,
+                LastName = dto.LastName,
+                IsActive = dto.IsActive,
+                LocationId = dto.LocationId,
                 Email = dto.Email
             };
 
@@ -116,6 +138,10 @@ namespace TireInventory.Controllers
             {
                 Id = user.Id,
                 UserName = user.UserName,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                IsActive = user.IsActive,
+                LocationId = user.LocationId,
                 Email = user.Email,
                 Roles = roles
             };
@@ -133,6 +159,10 @@ namespace TireInventory.Controllers
             if (user == null) return NotFound();
 
             user.UserName = dto.UserName;
+            user.FirstName = dto.FirstName;
+            user.LastName = dto.LastName;
+            user.IsActive = dto.IsActive;
+            user.LocationId = dto.LocationId;
             user.Email = dto.Email;
 
             var updateResult = await _userManager.UpdateAsync(user);
