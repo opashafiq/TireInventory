@@ -10,7 +10,7 @@ using TireInventory.Models;
 
 namespace TireInventory.Controllers
 {
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [Route("api/[controller]")]
     [ApiController]
     public class LayawayMasterController : ControllerBase
@@ -24,23 +24,60 @@ namespace TireInventory.Controllers
 
         // GET: api/LayawayMaster
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<LayawayMaster>>> GetLayawayMasters()
+        public async Task<ActionResult<IEnumerable<LayawayMasterDto>>> GetLayawayMasters()
         {
-            return await _context.LayawayMasters.ToListAsync();
+            var list = await _context.LayawayMasters
+                .Select(m => new LayawayMasterDto
+                {
+                    Id = m.Id,
+                    tbim_Phone = m.tbim_Phone,
+                    tbim_InvDate = m.tbim_InvDate,
+                    tbim_Name = m.tbim_Name,
+                    tbim_TaxId = m.tbim_TaxId,
+                    tbim_VehicleMake = m.tbim_VehicleMake,
+                    tbim_Model = m.tbim_Model,
+                    tbim_Year = m.tbim_Year,
+                    tbim_SubTotal = m.tbim_SubTotal,
+                    tbim_SaleTax = m.tbim_SaleTax,
+                    tbim_Total = m.tbim_Total,
+                    UserName = m.UserName,
+                    SetDate = m.SetDate,
+                    LocationName = m.tbim_Location != null ? m.tbim_Location.tbld_LocationName : string.Empty,
+                    TaxCompanyName = m.tbim_Tax != null ? m.tbim_Tax.tbti_ComName : string.Empty
+                })
+                .ToListAsync();
+
+            return Ok(list);
         }
 
         // GET: api/LayawayMaster/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<LayawayMaster>> GetLayawayMaster(long id)
+        public async Task<ActionResult<LayawayMasterDto>> GetLayawayMaster(long id)
         {
-            var layawayMaster = await _context.LayawayMasters.FindAsync(id);
+            var dto = await _context.LayawayMasters
+                .Where(m => m.Id == id)
+                .Select(m => new LayawayMasterDto
+                {
+                    Id = m.Id,
+                    tbim_Phone = m.tbim_Phone,
+                    tbim_InvDate = m.tbim_InvDate,
+                    tbim_Name = m.tbim_Name,
+                    tbim_TaxId = m.tbim_TaxId,
+                    tbim_VehicleMake = m.tbim_VehicleMake,
+                    tbim_Model = m.tbim_Model,
+                    tbim_Year = m.tbim_Year,
+                    tbim_SubTotal = m.tbim_SubTotal,
+                    tbim_SaleTax = m.tbim_SaleTax,
+                    tbim_Total = m.tbim_Total,
+                    UserName = m.UserName,
+                    SetDate = m.SetDate,
+                    LocationName = m.tbim_Location != null ? m.tbim_Location.tbld_LocationName : string.Empty,
+                    TaxCompanyName = m.tbim_Tax != null ? m.tbim_Tax.tbti_ComName : string.Empty
+                })
+                .FirstOrDefaultAsync();
 
-            if (layawayMaster == null)
-            {
-                return NotFound();
-            }
-
-            return layawayMaster;
+            if (dto == null) return NotFound();
+            return Ok(dto);
         }
 
         // PUT: api/LayawayMaster/5

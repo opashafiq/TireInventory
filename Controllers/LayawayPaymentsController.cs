@@ -1,3 +1,4 @@
+using System.Linq;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,7 +8,7 @@ using TireInventory.Models;
 
 namespace TireInventory.Controllers
 {
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [Route("api/[controller]")]
     [ApiController]
     public class LayawayPaymentsController : ControllerBase
@@ -21,23 +22,50 @@ namespace TireInventory.Controllers
 
         // GET: api/LayawayPayments
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<LayawayPayments>>> GetLayawayPayments()
+        public async Task<ActionResult<IEnumerable<LayawayPaymentsDto>>> GetLayawayPayments()
         {
-            return await _context.LayawayPayments.ToListAsync();
+            var list = await (from p in _context.LayawayPayments
+                              join pay in _context.PaymentNames
+                                  on p.tbip_PaymentId equals pay.Id into gj
+                              from pay in gj.DefaultIfEmpty()
+                              select new LayawayPaymentsDto
+                              {
+                                  Id = p.Id,
+                                  tbip_InvoiceId = p.tbip_InvoiceId,
+                                  tbip_PaymentId = p.tbip_PaymentId,
+                                  tbip_PayAmt = p.tbip_PayAmt,
+                                  tbip_Date = p.tbip_Date,
+                                  tbip_PaymentType = p.tbip_PaymentType,
+                                  PaymentName = pay != null ? pay.tbpn_PaymentName : string.Empty
+                              })
+                             .ToListAsync();
+
+            return Ok(list);
         }
 
         // GET: api/LayawayPayments/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<LayawayPayments>> GetLayawayPayments(long id)
+        public async Task<ActionResult<LayawayPaymentsDto>> GetLayawayPayments(long id)
         {
-            var layawayPayments = await _context.LayawayPayments.FindAsync(id);
+            var dto = await (from p in _context.LayawayPayments
+                             join pay in _context.PaymentNames
+                                 on p.tbip_PaymentId equals pay.Id into gj
+                             from pay in gj.DefaultIfEmpty()
+                             where p.Id == id
+                             select new LayawayPaymentsDto
+                             {
+                                 Id = p.Id,
+                                 tbip_InvoiceId = p.tbip_InvoiceId,
+                                 tbip_PaymentId = p.tbip_PaymentId,
+                                 tbip_PayAmt = p.tbip_PayAmt,
+                                 tbip_Date = p.tbip_Date,
+                                 tbip_PaymentType = p.tbip_PaymentType,
+                                 PaymentName = pay != null ? pay.tbpn_PaymentName : string.Empty
+                             })
+                            .FirstOrDefaultAsync();
 
-            if (layawayPayments == null)
-            {
-                return NotFound();
-            }
-
-            return layawayPayments;
+            if (dto == null) return NotFound();
+            return Ok(dto);
         }
 
         // PUT: api/LayawayPayments/5

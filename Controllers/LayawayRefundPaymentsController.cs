@@ -1,3 +1,4 @@
+using System.Linq;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,7 +8,7 @@ using TireInventory.Models;
 
 namespace TireInventory.Controllers
 {
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [Route("api/[controller]")]
     [ApiController]
     public class LayawayRefundPaymentsController : ControllerBase
@@ -21,23 +22,48 @@ namespace TireInventory.Controllers
 
         // GET: api/LayawayRefundPayments
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<LayawayRefundPayments>>> GetLayawayRefundPayments()
+        public async Task<ActionResult<IEnumerable<LayawayRefundPaymentsDto>>> GetLayawayRefundPayments()
         {
-            return await _context.LayawayRefundPayments.ToListAsync();
+            var list = await (from p in _context.LayawayRefundPayments
+                              join rm in _context.RefundMethodNames
+                                  on p.tbirp_RefundMethodId equals rm.Id into gj
+                              from rm in gj.DefaultIfEmpty()
+                              select new LayawayRefundPaymentsDto
+                              {
+                                  Id = p.Id,
+                                  tbirp_Layaway_RefundId = p.tbirp_Layaway_RefundId,
+                                  tbirp_RefundMethodId = p.tbirp_RefundMethodId,
+                                  tbirp_RefundAmt = p.tbirp_RefundAmt,
+                                  tbirp_Date = p.tbirp_Date,
+                                  RefundMethodName = rm != null ? rm.tbrmn_RefundMethodName : string.Empty
+                              })
+                             .ToListAsync();
+
+            return Ok(list);
         }
 
         // GET: api/LayawayRefundPayments/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<LayawayRefundPayments>> GetLayawayRefundPayments(long id)
+        public async Task<ActionResult<LayawayRefundPaymentsDto>> GetLayawayRefundPayments(long id)
         {
-            var layawayRefundPayments = await _context.LayawayRefundPayments.FindAsync(id);
+            var dto = await (from p in _context.LayawayRefundPayments
+                             join rm in _context.RefundMethodNames
+                                 on p.tbirp_RefundMethodId equals rm.Id into gj
+                             from rm in gj.DefaultIfEmpty()
+                             where p.Id == id
+                             select new LayawayRefundPaymentsDto
+                             {
+                                 Id = p.Id,
+                                 tbirp_Layaway_RefundId = p.tbirp_Layaway_RefundId,
+                                 tbirp_RefundMethodId = p.tbirp_RefundMethodId,
+                                 tbirp_RefundAmt = p.tbirp_RefundAmt,
+                                 tbirp_Date = p.tbirp_Date,
+                                 RefundMethodName = rm != null ? rm.tbrmn_RefundMethodName : string.Empty
+                             })
+                            .FirstOrDefaultAsync();
 
-            if (layawayRefundPayments == null)
-            {
-                return NotFound();
-            }
-
-            return layawayRefundPayments;
+            if (dto == null) return NotFound();
+            return Ok(dto);
         }
 
         // PUT: api/LayawayRefundPayments/5

@@ -10,7 +10,7 @@ using TireInventory.Models;
 
 namespace TireInventory.Controllers
 {
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [Route("api/[controller]")]
     [ApiController]
     public class LayawayRefundMasterController : ControllerBase
@@ -24,23 +24,64 @@ namespace TireInventory.Controllers
 
         // GET: api/LayawayRefundMaster
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<LayawayRefundMaster>>> GetLayawayRefundMasters()
+        public async Task<ActionResult<IEnumerable<LayawayRefundMasterDto>>> GetLayawayRefundMasters()
         {
-            return await _context.LayawayRefundMasters.ToListAsync();
+            var list = await (from r in _context.LayawayRefundMasters
+                              join l in _context.LayawayMasters
+                                  on r.Layaway_tbim_InvoiceId equals l.Id into gj
+                              from l in gj.DefaultIfEmpty()
+                              select new LayawayRefundMasterDto
+                              {
+                                  Id = r.Id,
+                                  tbirm_LayawayRefundDate = r.tbirm_LayawayRefundDate,
+                                  tbirm_RefundType = r.tbirm_RefundType,
+                                  tbirm_SubTotal = r.tbirm_SubTotal,
+                                  tbirm_SaleTax = r.tbirm_SaleTax,
+                                  tbirm_Labour = r.tbirm_Labour,
+                                  tbirm_DisPer = r.tbirm_DisPer,
+                                  tbirm_DisAmt = r.tbirm_DisAmt,
+                                  tbirm_Total = r.tbirm_Total,
+                                  tbirm_RefundAmt = r.tbirm_RefundAmt,
+                                  tbirm_Note = r.tbirm_Note,
+                                  UserName = r.UserName,
+                                  SetDate = r.SetDate,
+                                  OriginalLayawayName = l != null ? l.tbim_Name : string.Empty,
+                                  OriginalLayawayDate = l != null ? (DateTime?)l.tbim_InvDate : null
+                              }).ToListAsync();
+
+            return Ok(list);
         }
 
         // GET: api/LayawayRefundMaster/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<LayawayRefundMaster>> GetLayawayRefundMaster(long id)
+        public async Task<ActionResult<LayawayRefundMasterDto>> GetLayawayRefundMaster(long id)
         {
-            var layawayRefundMaster = await _context.LayawayRefundMasters
-                .Include(m => m.tbl_Layaway_Refund_Details)
-                .Include(m => m.tbl_Layaway_Refund_Payments)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var dto = await (from r in _context.LayawayRefundMasters
+                             join l in _context.LayawayMasters
+                                 on r.Layaway_tbim_InvoiceId equals l.Id into gj
+                             from l in gj.DefaultIfEmpty()
+                             where r.Id == id
+                             select new LayawayRefundMasterDto
+                             {
+                                 Id = r.Id,
+                                 tbirm_LayawayRefundDate = r.tbirm_LayawayRefundDate,
+                                 tbirm_RefundType = r.tbirm_RefundType,
+                                 tbirm_SubTotal = r.tbirm_SubTotal,
+                                 tbirm_SaleTax = r.tbirm_SaleTax,
+                                 tbirm_Labour = r.tbirm_Labour,
+                                 tbirm_DisPer = r.tbirm_DisPer,
+                                 tbirm_DisAmt = r.tbirm_DisAmt,
+                                 tbirm_Total = r.tbirm_Total,
+                                 tbirm_RefundAmt = r.tbirm_RefundAmt,
+                                 tbirm_Note = r.tbirm_Note,
+                                 UserName = r.UserName,
+                                 SetDate = r.SetDate,
+                                 OriginalLayawayName = l != null ? l.tbim_Name : string.Empty,
+                                 OriginalLayawayDate = l != null ? (DateTime?)l.tbim_InvDate : null
+                             }).FirstOrDefaultAsync();
 
-            if (layawayRefundMaster == null) return NotFound();
-
-            return layawayRefundMaster;
+            if (dto == null) return NotFound();
+            return Ok(dto);
         }
 
         // PUT: api/LayawayRefundMaster/5
