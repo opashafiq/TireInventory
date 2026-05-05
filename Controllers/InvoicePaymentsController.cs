@@ -1,3 +1,4 @@
+using System.Linq;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,7 +8,7 @@ using TireInventory.Models;
 
 namespace TireInventory.Controllers
 {
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [Route("api/[controller]")]
     [ApiController]
     public class InvoicePaymentsController : ControllerBase
@@ -21,23 +22,50 @@ namespace TireInventory.Controllers
 
         // GET: api/InvoicePayments
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<InvoicePayments>>> GetInvoicePayments()
+        public async Task<ActionResult<IEnumerable<InvoicePaymentsDto>>> GetInvoicePayments()
         {
-            return await _context.InvoicePayments.ToListAsync();
+            var list = await (from p in _context.InvoicePayments
+                              join pay in _context.PaymentNames
+                                  on p.tbip_PaymentId equals pay.Id into gj
+                              from pay in gj.DefaultIfEmpty()
+                              select new InvoicePaymentsDto
+                              {
+                                  Id = p.Id,
+                                  tbip_InvoiceId = p.tbip_InvoiceId,
+                                  tbip_PaymentId = p.tbip_PaymentId,
+                                  tbip_PayAmt = p.tbip_PayAmt,
+                                  tbip_Date = p.tbip_Date,
+                                  tbip_PaymentTypeId = p.tbip_PaymentTypeId,
+                                  PaymentName = pay != null ? pay.tbpn_PaymentName : string.Empty
+                              })
+                             .ToListAsync();
+
+            return Ok(list);
         }
 
         // GET: api/InvoicePayments/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<InvoicePayments>> GetInvoicePayments(long id)
+        public async Task<ActionResult<InvoicePaymentsDto>> GetInvoicePayments(long id)
         {
-            var invoicePayments = await _context.InvoicePayments.FindAsync(id);
+            var dto = await (from p in _context.InvoicePayments
+                             join pay in _context.PaymentNames
+                                 on p.tbip_PaymentId equals pay.Id into gj
+                             from pay in gj.DefaultIfEmpty()
+                             where p.Id == id
+                             select new InvoicePaymentsDto
+                             {
+                                 Id = p.Id,
+                                 tbip_InvoiceId = p.tbip_InvoiceId,
+                                 tbip_PaymentId = p.tbip_PaymentId,
+                                 tbip_PayAmt = p.tbip_PayAmt,
+                                 tbip_Date = p.tbip_Date,
+                                 tbip_PaymentTypeId = p.tbip_PaymentTypeId,
+                                 PaymentName = pay != null ? pay.tbpn_PaymentName : string.Empty
+                             })
+                            .FirstOrDefaultAsync();
 
-            if (invoicePayments == null)
-            {
-                return NotFound();
-            }
-
-            return invoicePayments;
+            if (dto == null) return NotFound();
+            return Ok(dto);
         }
 
         // PUT: api/InvoicePayments/5

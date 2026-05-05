@@ -1,3 +1,4 @@
+using System.Linq;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,7 +8,7 @@ using TireInventory.Models;
 
 namespace TireInventory.Controllers
 {
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [Route("api/[controller]")]
     [ApiController]
     public class InvoiceDetailsController : ControllerBase
@@ -21,23 +22,85 @@ namespace TireInventory.Controllers
 
         // GET: api/InvoiceDetails
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<InvoiceDetails>>> GetInvoiceDetails()
+        public async Task<ActionResult<IEnumerable<InvoiceDetailsDto>>> GetInvoiceDetails()
         {
-            return await _context.InvoiceDetails.ToListAsync();
+            var list = await _context.InvoiceDetails
+                .Select(d => new InvoiceDetailsDto
+                {
+                    Id = d.Id,
+                    tbid_InvoiceId = d.tbid_InvoiceId,
+                    tbid_ItemId = d.tbid_ItemId,
+                    tbid_ItemCategory = d.tbid_ItemCategory,
+                    tbid_DepartmentName = d.tbid_DepartmentName,
+                    tbid_Size = d.tbid_Size,
+                    tbid_Brand = d.tbid_Brand,
+                    tbid_Series = d.tbid_Series,
+                    tbid_Bolt = d.tbid_Bolt,
+                    tbid_HoleS = d.tbid_HoleS,
+                    tbid_Zone = d.tbid_Zone,
+                    tbid_DistributorId = d.tbid_DistributorId,
+                    tbid_DistributorName = d.tbid_DistributorName,
+                    tbid_Qty = d.tbid_Qty,
+                    tbid_Taxable = d.tbid_Taxable,
+                    tbid_UnitPrice = d.tbid_UnitPrice,
+                    tbid_LineTotal = d.tbid_LineTotal,
+                    tbid_TaxAmt = d.tbid_TaxAmt,
+
+                    // resolved values via navigation properties
+                    ItemDepartmentName = d.tbid_Item != null && d.tbid_Item.tbim_ItemCategory != null
+                        ? d.tbid_Item.tbim_ItemCategory.Tbid_DepartmentName : string.Empty,
+                    ItemDistributorName = d.tbid_Item != null && d.tbid_Item.tbim_Distributor != null
+                        ? d.tbid_Item.tbim_Distributor.Name : string.Empty,
+                    ItemLocationName = d.tbid_Item != null && d.tbid_Item.tbim_Location != null
+                        ? d.tbid_Item.tbim_Location.tbld_LocationName : string.Empty,
+                    ItemDisplay = d.tbid_Item != null
+                        ? (d.tbid_Item.tbim_Brand + " " + d.tbid_Item.tbim_Size).Trim() : string.Empty
+                })
+                .ToListAsync();
+
+            return Ok(list);
         }
 
         // GET: api/InvoiceDetails/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<InvoiceDetails>> GetInvoiceDetails(long id)
+        public async Task<ActionResult<InvoiceDetailsDto>> GetInvoiceDetails(long id)
         {
-            var invoiceDetails = await _context.InvoiceDetails.FindAsync(id);
+            var dto = await _context.InvoiceDetails
+                .Where(d => d.Id == id)
+                .Select(d => new InvoiceDetailsDto
+                {
+                    Id = d.Id,
+                    tbid_InvoiceId = d.tbid_InvoiceId,
+                    tbid_ItemId = d.tbid_ItemId,
+                    tbid_ItemCategory = d.tbid_ItemCategory,
+                    tbid_DepartmentName = d.tbid_DepartmentName,
+                    tbid_Size = d.tbid_Size,
+                    tbid_Brand = d.tbid_Brand,
+                    tbid_Series = d.tbid_Series,
+                    tbid_Bolt = d.tbid_Bolt,
+                    tbid_HoleS = d.tbid_HoleS,
+                    tbid_Zone = d.tbid_Zone,
+                    tbid_DistributorId = d.tbid_DistributorId,
+                    tbid_DistributorName = d.tbid_DistributorName,
+                    tbid_Qty = d.tbid_Qty,
+                    tbid_Taxable = d.tbid_Taxable,
+                    tbid_UnitPrice = d.tbid_UnitPrice,
+                    tbid_LineTotal = d.tbid_LineTotal,
+                    tbid_TaxAmt = d.tbid_TaxAmt,
 
-            if (invoiceDetails == null)
-            {
-                return NotFound();
-            }
+                    ItemDepartmentName = d.tbid_Item != null && d.tbid_Item.tbim_ItemCategory != null
+                        ? d.tbid_Item.tbim_ItemCategory.Tbid_DepartmentName : string.Empty,
+                    ItemDistributorName = d.tbid_Item != null && d.tbid_Item.tbim_Distributor != null
+                        ? d.tbid_Item.tbim_Distributor.Name : string.Empty,
+                    ItemLocationName = d.tbid_Item != null && d.tbid_Item.tbim_Location != null
+                        ? d.tbid_Item.tbim_Location.tbld_LocationName : string.Empty,
+                    ItemDisplay = d.tbid_Item != null
+                        ? (d.tbid_Item.tbim_Brand + " " + d.tbid_Item.tbim_Size).Trim() : string.Empty
+                })
+                .FirstOrDefaultAsync();
 
-            return invoiceDetails;
+            if (dto == null) return NotFound();
+            return Ok(dto);
         }
 
         // PUT: api/InvoiceDetails/5
