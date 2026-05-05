@@ -1,3 +1,4 @@
+using System.Linq;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,7 +8,7 @@ using TireInventory.Models;
 
 namespace TireInventory.Controllers
 {
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [Route("api/[controller]")]
     [ApiController]
     public class InvoiceRefundPaymentsController : ControllerBase
@@ -21,23 +22,48 @@ namespace TireInventory.Controllers
 
         // GET: api/InvoiceRefundPayments
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<InvoiceRefundPayments>>> GetInvoiceRefundPayments()
+        public async Task<ActionResult<IEnumerable<InvoiceRefundPaymentsDto>>> GetInvoiceRefundPayments()
         {
-            return await _context.InvoiceRefundPayments.ToListAsync();
+            var list = await (from p in _context.InvoiceRefundPayments
+                              join rm in _context.RefundMethodNames
+                                  on p.tbirp_RefundMethodId equals rm.Id into gj
+                              from rm in gj.DefaultIfEmpty()
+                              select new InvoiceRefundPaymentsDto
+                              {
+                                  Id = p.Id,
+                                  tbirp_InvoiceRefundId = p.tbirp_InvoiceRefundId,
+                                  tbirp_RefundMethodId = p.tbirp_RefundMethodId,
+                                  tbirp_RefundAmt = p.tbirp_RefundAmt,
+                                  tbirp_Date = p.tbirp_Date,
+                                  RefundMethodName = rm != null ? rm.tbrmn_RefundMethodName : string.Empty
+                              })
+                             .ToListAsync();
+
+            return Ok(list);
         }
 
         // GET: api/InvoiceRefundPayments/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<InvoiceRefundPayments>> GetInvoiceRefundPayments(long id)
+        public async Task<ActionResult<InvoiceRefundPaymentsDto>> GetInvoiceRefundPayments(long id)
         {
-            var invoiceRefundPayments = await _context.InvoiceRefundPayments.FindAsync(id);
+            var dto = await (from p in _context.InvoiceRefundPayments
+                             join rm in _context.RefundMethodNames
+                                 on p.tbirp_RefundMethodId equals rm.Id into gj
+                             from rm in gj.DefaultIfEmpty()
+                             where p.Id == id
+                             select new InvoiceRefundPaymentsDto
+                             {
+                                 Id = p.Id,
+                                 tbirp_InvoiceRefundId = p.tbirp_InvoiceRefundId,
+                                 tbirp_RefundMethodId = p.tbirp_RefundMethodId,
+                                 tbirp_RefundAmt = p.tbirp_RefundAmt,
+                                 tbirp_Date = p.tbirp_Date,
+                                 RefundMethodName = rm != null ? rm.tbrmn_RefundMethodName : string.Empty
+                             })
+                            .FirstOrDefaultAsync();
 
-            if (invoiceRefundPayments == null)
-            {
-                return NotFound();
-            }
-
-            return invoiceRefundPayments;
+            if (dto == null) return NotFound();
+            return Ok(dto);
         }
 
         // PUT: api/InvoiceRefundPayments/5

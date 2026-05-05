@@ -10,7 +10,7 @@ using TireInventory.Models;
 
 namespace TireInventory.Controllers
 {
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [Route("api/[controller]")]
     [ApiController]
     public class InvoiceRefundMasterController : ControllerBase
@@ -24,26 +24,62 @@ namespace TireInventory.Controllers
 
         // GET: api/InvoiceRefundMaster
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<InvoiceRefundMaster>>> GetInvoiceRefundMasters()
+        public async Task<ActionResult<IEnumerable<InvoiceRefundMasterDto>>> GetInvoiceRefundMasters()
         {
-            return await _context.InvoiceRefundMasters.ToListAsync();
+            var list = await _context.InvoiceRefundMasters
+                .Select(m => new InvoiceRefundMasterDto
+                {
+                    Id = m.Id,
+                    tbirm_InvoiceId = m.tbirm_InvoiceId,
+                    tbirm_InvRefundDate = m.tbirm_InvRefundDate,
+                    tbirm_RefundType = m.tbirm_RefundType,
+                    tbirm_SubTotal = m.tbirm_SubTotal,
+                    tbirm_SaleTax = m.tbirm_SaleTax,
+                    tbirm_Labour = m.tbirm_Labour,
+                    tbirm_DisPer = m.tbirm_DisPer,
+                    tbirm_DisAmt = m.tbirm_DisAmt,
+                    tbirm_Total = m.tbirm_Total,
+                    tbirm_RefundAmt = m.tbirm_RefundAmt,
+                    tbirm_Note = m.tbirm_Note,
+                    UserName = m.UserName,
+                    SetDate = m.SetDate,
+                    OriginalInvoiceName = m.tbirm_Invoice != null ? m.tbirm_Invoice.tbim_Name : string.Empty,
+                    OriginalInvoiceDate = m.tbirm_Invoice != null ? (DateTime?)m.tbirm_Invoice.tbim_InvDate : null
+                })
+                .ToListAsync();
+
+            return Ok(list);
         }
 
         // GET: api/InvoiceRefundMaster/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<InvoiceRefundMaster>> GetInvoiceRefundMaster(long id)
+        public async Task<ActionResult<InvoiceRefundMasterDto>> GetInvoiceRefundMaster(long id)
         {
-            var invoiceRefundMaster = await _context.InvoiceRefundMasters
-                .Include(m => m.tbl_Invoice_Refund_Details)
-                .Include(m => m.tbl_Invoice_Refund_Payments)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var dto = await _context.InvoiceRefundMasters
+                .Where(m => m.Id == id)
+                .Select(m => new InvoiceRefundMasterDto
+                {
+                    Id = m.Id,
+                    tbirm_InvoiceId = m.tbirm_InvoiceId,
+                    tbirm_InvRefundDate = m.tbirm_InvRefundDate,
+                    tbirm_RefundType = m.tbirm_RefundType,
+                    tbirm_SubTotal = m.tbirm_SubTotal,
+                    tbirm_SaleTax = m.tbirm_SaleTax,
+                    tbirm_Labour = m.tbirm_Labour,
+                    tbirm_DisPer = m.tbirm_DisPer,
+                    tbirm_DisAmt = m.tbirm_DisAmt,
+                    tbirm_Total = m.tbirm_Total,
+                    tbirm_RefundAmt = m.tbirm_RefundAmt,
+                    tbirm_Note = m.tbirm_Note,
+                    UserName = m.UserName,
+                    SetDate = m.SetDate,
+                    OriginalInvoiceName = m.tbirm_Invoice != null ? m.tbirm_Invoice.tbim_Name : string.Empty,
+                    OriginalInvoiceDate = m.tbirm_Invoice != null ? (DateTime?)m.tbirm_Invoice.tbim_InvDate : null
+                })
+                .FirstOrDefaultAsync();
 
-            if (invoiceRefundMaster == null)
-            {
-                return NotFound();
-            }
-
-            return invoiceRefundMaster;
+            if (dto == null) return NotFound();
+            return Ok(dto);
         }
 
         // PUT: api/InvoiceRefundMaster/5
