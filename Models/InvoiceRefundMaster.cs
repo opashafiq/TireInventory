@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TireInventory.Models;
 
+[Table("tbl_Invoice_Refund_Master")]
 public partial class InvoiceRefundMaster
 {
     public long Id { get; set; }

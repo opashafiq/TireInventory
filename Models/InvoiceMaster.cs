@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TireInventory.Models;
 
+[Table("tbl_Invoice_Master")]
 public partial class InvoiceMaster
 {
     public long Id { get; set; }

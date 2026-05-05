@@ -10,7 +10,7 @@ using TireInventory.Models;
 
 namespace TireInventory.Controllers
 {
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [Route("api/[controller]")]
     [ApiController]
     public class InvoiceMasterController : ControllerBase
@@ -24,23 +24,76 @@ namespace TireInventory.Controllers
 
         // GET: api/InvoiceMaster
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<InvoiceMaster>>> GetInvoiceMasters()
+        public async Task<ActionResult<IEnumerable<InvoiceMasterDto>>> GetInvoiceMasters()
         {
-            return await _context.InvoiceMasters.ToListAsync();
+            var list = await _context.InvoiceMasters
+                .Select(m => new InvoiceMasterDto
+                {
+                    Id = m.Id,
+                    tbim_Phone = m.tbim_Phone,
+                    tbim_InvDate = m.tbim_InvDate,
+                    tbim_Name = m.tbim_Name,
+                    tbim_TaxId = m.tbim_TaxId,
+                    tbim_VehicleMake = m.tbim_VehicleMake,
+                    tbim_Model = m.tbim_Model,
+                    tbim_Year = m.tbim_Year,
+                    tbim_Odometer = m.tbim_Odometer,
+                    tbim_SubTotal = m.tbim_SubTotal,
+                    tbim_SaleTax = m.tbim_SaleTax,
+                    tbim_Labour = m.tbim_Labour,
+                    tbim_DisPer = m.tbim_DisPer,
+                    tbim_DisAmt = m.tbim_DisAmt,
+                    tbim_Total = m.tbim_Total,
+                    tbim_PaidAmt = m.tbim_PaidAmt,
+                    tbim_PayInfo = m.tbim_PayInfo,
+                    tbim_Note = m.tbim_Note,
+                    tbim_LocationDetailsId = m.tbim_LocationDetailsId,
+                    UserName = m.UserName,
+                    SetDate = m.SetDate,
+                    LocationName = m.tbim_LocationDetails != null ? m.tbim_LocationDetails.tbld_LocationName : string.Empty,
+                    TaxCompanyName = m.tbim_Tax != null ? m.tbim_Tax.tbti_ComName : string.Empty
+                })
+                .ToListAsync();
+
+            return Ok(list);
         }
 
         // GET: api/InvoiceMaster/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<InvoiceMaster>> GetInvoiceMaster(long id)
+        public async Task<ActionResult<InvoiceMasterDto>> GetInvoiceMaster(long id)
         {
-            var invoiceMaster = await _context.InvoiceMasters.FindAsync(id);
+            var dto = await _context.InvoiceMasters
+                .Where(m => m.Id == id)
+                .Select(m => new InvoiceMasterDto
+                {
+                    Id = m.Id,
+                    tbim_Phone = m.tbim_Phone,
+                    tbim_InvDate = m.tbim_InvDate,
+                    tbim_Name = m.tbim_Name,
+                    tbim_TaxId = m.tbim_TaxId,
+                    tbim_VehicleMake = m.tbim_VehicleMake,
+                    tbim_Model = m.tbim_Model,
+                    tbim_Year = m.tbim_Year,
+                    tbim_Odometer = m.tbim_Odometer,
+                    tbim_SubTotal = m.tbim_SubTotal,
+                    tbim_SaleTax = m.tbim_SaleTax,
+                    tbim_Labour = m.tbim_Labour,
+                    tbim_DisPer = m.tbim_DisPer,
+                    tbim_DisAmt = m.tbim_DisAmt,
+                    tbim_Total = m.tbim_Total,
+                    tbim_PaidAmt = m.tbim_PaidAmt,
+                    tbim_PayInfo = m.tbim_PayInfo,
+                    tbim_Note = m.tbim_Note,
+                    tbim_LocationDetailsId = m.tbim_LocationDetailsId,
+                    UserName = m.UserName,
+                    SetDate = m.SetDate,
+                    LocationName = m.tbim_LocationDetails != null ? m.tbim_LocationDetails.tbld_LocationName : string.Empty,
+                    TaxCompanyName = m.tbim_Tax != null ? m.tbim_Tax.tbti_ComName : string.Empty
+                })
+                .FirstOrDefaultAsync();
 
-            if (invoiceMaster == null)
-            {
-                return NotFound();
-            }
-
-            return invoiceMaster;
+            if (dto == null) return NotFound();
+            return Ok(dto);
         }
 
         // PUT: api/InvoiceMaster/5

@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TireInventory.Models;
-
+[Table("tbl_Layaway_Details")]
 public partial class LayawayDetails
 {
     public long Id { get; set; }

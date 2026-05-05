@@ -1,3 +1,4 @@
+using System.Linq;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,7 +8,7 @@ using TireInventory.Models;
 
 namespace TireInventory.Controllers
 {
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [Route("api/[controller]")]
     [ApiController]
     public class LocationDetailsController : ControllerBase
@@ -21,23 +22,54 @@ namespace TireInventory.Controllers
 
         // GET: api/LocationDetails
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<LocationDetails>>> GetLocationDetails()
+        public async Task<ActionResult<IEnumerable<LocationDetailsDto>>> GetLocationDetails()
         {
-            return await _context.LocationDetails.ToListAsync();
+            var list = await _context.LocationDetails
+                .Select(ld => new LocationDetailsDto
+                {
+                    Id = ld.Id,
+                    tbld_LocationName = ld.tbld_LocationName,
+                    CompanyInfoId = ld.CompanyInfoId,
+                    tbld_Address1 = ld.tbld_Address1,
+                    tbld_Address2 = ld.tbld_Address2,
+                    tbld_City = ld.tbld_City,
+                    tbld_State = ld.tbld_State,
+                    tbld_ZipCode = ld.tbld_ZipCode,
+                    tbld_Phone = ld.tbld_Phone,
+                    tbld_Fax = ld.tbld_Fax,
+                    tbld_Email = ld.tbld_Email,
+                    CompanyName = ld.CompanyInfo != null ? ld.CompanyInfo.tbbiBusinessName : string.Empty
+                })
+                .ToListAsync();
+
+            return Ok(list);
         }
 
         // GET: api/LocationDetails/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<LocationDetails>> GetLocationDetails(long id)
+        public async Task<ActionResult<LocationDetailsDto>> GetLocationDetails(long id)
         {
-            var locationDetails = await _context.LocationDetails.FindAsync(id);
+            var dto = await _context.LocationDetails
+                .Where(ld => ld.Id == id)
+                .Select(ld => new LocationDetailsDto
+                {
+                    Id = ld.Id,
+                    tbld_LocationName = ld.tbld_LocationName,
+                    CompanyInfoId = ld.CompanyInfoId,
+                    tbld_Address1 = ld.tbld_Address1,
+                    tbld_Address2 = ld.tbld_Address2,
+                    tbld_City = ld.tbld_City,
+                    tbld_State = ld.tbld_State,
+                    tbld_ZipCode = ld.tbld_ZipCode,
+                    tbld_Phone = ld.tbld_Phone,
+                    tbld_Fax = ld.tbld_Fax,
+                    tbld_Email = ld.tbld_Email,
+                    CompanyName = ld.CompanyInfo != null ? ld.CompanyInfo.tbbiBusinessName : string.Empty
+                })
+                .FirstOrDefaultAsync();
 
-            if (locationDetails == null)
-            {
-                return NotFound();
-            }
-
-            return locationDetails;
+            if (dto == null) return NotFound();
+            return Ok(dto);
         }
 
         // PUT: api/LocationDetails/5
