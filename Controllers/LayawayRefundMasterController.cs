@@ -84,6 +84,76 @@ namespace TireInventory.Controllers
             return Ok(dto);
         }
 
+        // NEW: GET: api/LayawayRefundMaster/{id}/details
+        // Returns LayawayRefundDetails for a given layaway-refund id (with resolved item names)
+        [HttpGet("{id}/details")]
+        public async Task<ActionResult<IEnumerable<LayawayRefundDetailsDto>>> GetLayawayRefundDetailsByRefund(long id)
+        {
+            var list = await _context.LayawayRefundDetails
+                .Where(d => d.tbird_Layaway_RefundId == id)
+                .Select(d => new LayawayRefundDetailsDto
+                {
+                    Id = d.Id,
+                    tbird_Layaway_RefundId = d.tbird_Layaway_RefundId,
+                    tbird_ItemId = d.tbird_ItemId,
+                    tbird_ItemCategory = d.tbird_ItemCategory,
+                    tbird_DepartmentName = d.tbird_DepartmentName,
+                    tbird_Size = d.tbird_Size,
+                    tbird_Brand = d.tbird_Brand,
+                    tbird_Series = d.tbird_Series,
+                    tbird_Bolt = d.tbird_Bolt,
+                    tbird_HoleS = d.tbird_HoleS,
+                    tbird_Zone = d.tbird_Zone,
+                    tbird_DistributorId = d.tbird_DistributorId,
+                    tbird_DistributorName = d.tbird_DistributorName,
+                    tbird_Qty = d.tbird_Qty,
+                    tbird_Layaway_Qty = d.tbird_Layaway_Qty,
+                    tbird_Layaway_Qty_LineTotal = d.tbird_Layaway_Qty_LineTotal,
+                    tbird_Layaway_Qty_TaxAmt = d.tbird_Layaway_Qty_TaxAmt,
+                    tbird_Taxable = d.tbird_Taxable,
+                    tbird_UnitPrice = d.tbird_UnitPrice,
+                    tbird_LineTotal = d.tbird_LineTotal,
+                    tbird_TaxRate = d.tbird_TaxRate,
+                    tbird_TaxAmt = d.tbird_TaxAmt,
+
+                    ItemDepartmentName = d.tbird_Item != null && d.tbird_Item.tbim_ItemCategory != null
+                        ? d.tbird_Item.tbim_ItemCategory.Tbid_DepartmentName : string.Empty,
+                    ItemDistributorName = d.tbird_Item != null && d.tbird_Item.tbim_Distributor != null
+                        ? d.tbird_Item.tbim_Distributor.Name : string.Empty,
+                    ItemLocationName = d.tbird_Item != null && d.tbird_Item.tbim_Location != null
+                        ? d.tbird_Item.tbim_Location.tbld_LocationName : string.Empty,
+                    ItemDisplay = d.tbird_Item != null
+                        ? (d.tbird_Item.tbim_Brand + " " + d.tbird_Item.tbim_Size).Trim() : string.Empty
+                })
+                .ToListAsync();
+
+            return Ok(list);
+        }
+
+        // NEW: GET: api/LayawayRefundMaster/{id}/payments
+        // Returns LayawayRefundPayments for a given layaway-refund id (with resolved refund method name)
+        [HttpGet("{id}/payments")]
+        public async Task<ActionResult<IEnumerable<LayawayRefundPaymentsDto>>> GetLayawayRefundPaymentsByRefund(long id)
+        {
+            var list = await (from p in _context.LayawayRefundPayments
+                              join rm in _context.RefundMethodNames
+                                  on p.tbirp_RefundMethodId equals rm.Id into gj
+                              from rm in gj.DefaultIfEmpty()
+                              where p.tbirp_Layaway_RefundId == id
+                              select new LayawayRefundPaymentsDto
+                              {
+                                  Id = p.Id,
+                                  tbirp_Layaway_RefundId = p.tbirp_Layaway_RefundId,
+                                  tbirp_RefundMethodId = p.tbirp_RefundMethodId,
+                                  tbirp_RefundAmt = p.tbirp_RefundAmt,
+                                  tbirp_Date = p.tbirp_Date,
+                                  RefundMethodName = rm != null ? rm.tbrmn_RefundMethodName : string.Empty
+                              })
+                             .ToListAsync();
+
+            return Ok(list);
+        }
+
         // PUT: api/LayawayRefundMaster/5
         [HttpPut("{id}")]
         public async Task<IActionResult> PutLayawayRefundMaster(long id, LayawayRefundMaster layawayRefundMaster)

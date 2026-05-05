@@ -80,6 +80,72 @@ namespace TireInventory.Controllers
             return Ok(dto);
         }
 
+
+        // GET: api/LayawayMaster/{id}/details
+        [HttpGet("{id}/details")]
+        public async Task<ActionResult<IEnumerable<LayawayDetailsDto>>> GetLayawayDetailsByLayaway(long id)
+        {
+            var list = await _context.LayawayDetails
+                .Where(d => d.tbid_InvoiceId == id)
+                .Select(d => new LayawayDetailsDto
+                {
+                    Id = d.Id,
+                    tbid_InvoiceId = d.tbid_InvoiceId,
+                    tbid_ItemId = d.tbid_ItemId,
+                    tbid_ItemCategory = d.tbid_ItemCategory,
+                    tbid_DepartmentName = d.tbid_DepartmentName,
+                    tbid_Size = d.tbid_Size,
+                    tbid_Brand = d.tbid_Brand,
+                    tbid_Series = d.tbid_Series,
+                    tbid_Bolt = d.tbid_Bolt,
+                    tbid_HoleS = d.tbid_HoleS,
+                    tbid_Zone = d.tbid_Zone,
+                    tbid_DistributorId = d.tbid_DistributorId,
+                    tbid_DistributorName = d.tbid_DistributorName,
+                    tbid_Qty = d.tbid_Qty,
+                    tbid_Taxable = d.tbid_Taxable,
+                    tbid_UnitPrice = d.tbid_UnitPrice,
+                    tbid_LineTotal = d.tbid_LineTotal,
+                    tbid_TaxAmt = d.tbid_TaxAmt,
+
+                    ItemDepartmentName = d.tbid_Item != null && d.tbid_Item.tbim_ItemCategory != null
+                        ? d.tbid_Item.tbim_ItemCategory.Tbid_DepartmentName : string.Empty,
+                    ItemDistributorName = d.tbid_Item != null && d.tbid_Item.tbim_Distributor != null
+                        ? d.tbid_Item.tbim_Distributor.Name : string.Empty,
+                    ItemLocationName = d.tbid_Item != null && d.tbid_Item.tbim_Location != null
+                        ? d.tbid_Item.tbim_Location.tbld_LocationName : string.Empty,
+                    ItemDisplay = d.tbid_Item != null
+                        ? (d.tbid_Item.tbim_Brand + " " + d.tbid_Item.tbim_Size).Trim() : string.Empty
+                })
+                .ToListAsync();
+
+            return Ok(list);
+        }
+
+        // GET: api/LayawayMaster/{id}/payments
+        [HttpGet("{id}/payments")]
+        public async Task<ActionResult<IEnumerable<LayawayPaymentsDto>>> GetLayawayPaymentsByLayaway(long id)
+        {
+            var list = await (from p in _context.LayawayPayments
+                              join pay in _context.PaymentNames
+                                  on p.tbip_PaymentId equals pay.Id into gj
+                              from pay in gj.DefaultIfEmpty()
+                              where p.tbip_InvoiceId == id
+                              select new LayawayPaymentsDto
+                              {
+                                  Id = p.Id,
+                                  tbip_InvoiceId = p.tbip_InvoiceId,
+                                  tbip_PaymentId = p.tbip_PaymentId,
+                                  tbip_PayAmt = p.tbip_PayAmt,
+                                  tbip_Date = p.tbip_Date,
+                                  tbip_PaymentType = p.tbip_PaymentType,
+                                  PaymentName = pay != null ? pay.tbpn_PaymentName : string.Empty
+                              })
+                             .ToListAsync();
+
+            return Ok(list);
+        }
+
         // PUT: api/LayawayMaster/5
         [HttpPut("{id}")]
         public async Task<IActionResult> PutLayawayMaster(long id, LayawayMaster layawayMaster)
