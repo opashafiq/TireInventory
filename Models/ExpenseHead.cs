@@ -13,4 +13,6 @@ public partial class ExpenseHead
     public string? UserName { get; set; }
 
     public DateTime? SetDate { get; set; }
+
+    //public virtual ICollection<DailyExpense> DailyExpense { get; set; } = new List<DailyExpense>();
 }
