@@ -39,16 +39,61 @@ namespace TireInventory.Controllers
             return Ok(roles);
         }
 
+        //// GET: api/ApplicationUser
+        //[HttpGet]
+        //public async Task<ActionResult<IEnumerable<IdentityUserDto>>> GetUsers()
+        //{
+        //    var users = await _userManager.Users.ToListAsync();
+        //    var result = new List<IdentityUserDto>();
+
+        //    foreach (var u in users)
+        //    {
+        //        var roles = (await _userManager.GetRolesAsync(u)).ToList();
+        //        result.Add(new IdentityUserDto
+        //        {
+        //            Id = u.Id,
+        //            UserName = u.UserName ?? string.Empty,
+        //            FirstName = u.FirstName ?? string.Empty,
+        //            LastName = u.LastName ?? string.Empty,
+        //            IsActive = u.IsActive,
+        //            LocationId = u.LocationId,
+        //            Email = u.Email ?? string.Empty,
+        //            Roles = roles
+        //        });
+        //    }
+
+        //    return Ok(result);
+        //}
+
         // GET: api/ApplicationUser
         [HttpGet]
         public async Task<ActionResult<IEnumerable<IdentityUserDto>>> GetUsers()
         {
+            // 1. Fetch all users from the Identity database
             var users = await _userManager.Users.ToListAsync();
+
+            // 2. Fetch all locations into server memory to prevent EF Core from 
+            // generating modern 'WITH' or 'OPENJSON' syntax that SQL Server 2014 breaks on.
+            var allLocations = await _context.LocationDetails.ToListAsync();
+
+            // 3. Extract unique Location IDs from our user pool to filter the dictionary
+            var userLocationIds = users.Select(u => u.LocationId).Distinct().ToHashSet();
+
+            // 4. Build a fast lookup dictionary in-memory
+            var locationsDict = allLocations
+                .Where(l => userLocationIds.Contains(l.Id))
+                .ToDictionary(l => l.Id, l => l.tbld_LocationName);
+
             var result = new List<IdentityUserDto>();
 
+            // 5. Map users and their roles to the final DTO list
             foreach (var u in users)
             {
                 var roles = (await _userManager.GetRolesAsync(u)).ToList();
+
+                // Safely look up the location name from our in-memory dictionary
+                locationsDict.TryGetValue(u.LocationId, out var locationName);
+
                 result.Add(new IdentityUserDto
                 {
                     Id = u.Id,
@@ -57,6 +102,7 @@ namespace TireInventory.Controllers
                     LastName = u.LastName ?? string.Empty,
                     IsActive = u.IsActive,
                     LocationId = u.LocationId,
+                    LocationName = locationName ?? "Unknown Location", // Mapped from database table
                     Email = u.Email ?? string.Empty,
                     Roles = roles
                 });
@@ -65,29 +111,58 @@ namespace TireInventory.Controllers
             return Ok(result);
         }
 
+        //// GET: api/ApplicationUser/{id}
+        //[HttpGet("{id}")]
+        //public async Task<ActionResult<IdentityUserDto>> GetUser(string id)
+        //{
+        //    var user = await _userManager.FindByIdAsync(id);
+        //    if (user == null) return NotFound();
 
+        //    var roles = (await _userManager.GetRolesAsync(user)).ToList();
+
+        //    return Ok(new IdentityUserDto
+        //    {
+        //        Id = user.Id,
+        //        UserName = user.UserName,
+        //        FirstName = user.FirstName ?? string.Empty,
+        //        LastName = user.LastName ?? string.Empty, 
+        //        IsActive = user.IsActive,
+        //        LocationId = user.LocationId,
+        //        Email = user.Email,
+        //        Roles = roles
+        //    });
+        //}
 
         // GET: api/ApplicationUser/{id}
         [HttpGet("{id}")]
         public async Task<ActionResult<IdentityUserDto>> GetUser(string id)
         {
+            // 1. Find the user by ID
             var user = await _userManager.FindByIdAsync(id);
             if (user == null) return NotFound();
 
+            // 2. Fetch the user's assigned roles
             var roles = (await _userManager.GetRolesAsync(user)).ToList();
 
+            // 3. Look up the specific location name from LocationDetails safely
+            var location = await _context.LocationDetails
+                .FirstOrDefaultAsync(l => l.Id == user.LocationId);
+
+            // 4. Return the fully mapped DTO
             return Ok(new IdentityUserDto
             {
                 Id = user.Id,
-                UserName = user.UserName,
+                UserName = user.UserName ?? string.Empty,
                 FirstName = user.FirstName ?? string.Empty,
-                LastName = user.LastName ?? string.Empty, 
+                LastName = user.LastName ?? string.Empty,
                 IsActive = user.IsActive,
                 LocationId = user.LocationId,
-                Email = user.Email,
+                LocationName = location?.tbld_LocationName ?? "Unknown Location", // Mapped field safely handling nulls
+                Email = user.Email ?? string.Empty,
                 Roles = roles
             });
         }
+
 
         // POST: api/ApplicationUser
         [HttpPost]

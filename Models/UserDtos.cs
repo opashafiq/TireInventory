@@ -34,6 +34,7 @@ namespace TireInventory.Models
         public string LastName { get; set; } = string.Empty;
         public bool IsActive { get; set; }
         public long LocationId { get; set; }
+        public string LocationName { get; set; }
         public string Email { get; set; } = string.Empty;
         // Use a concrete collection type and initialize to avoid reflection/serialization issues
         public List<string> Roles { get; set; } = new List<string>();
