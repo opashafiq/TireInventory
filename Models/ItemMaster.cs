@@ -48,6 +48,6 @@ public partial class ItemMaster
 
     public virtual Distributors? tbim_Distributor { get; set; }
 
-    public virtual LocationDetails tbim_Location { get; set; } = null!;
-    public virtual Departments tbim_ItemCategory { get; set; } = null!;
+    public virtual LocationDetails? tbim_Location { get; set; } = null!;
+    public virtual Departments? tbim_ItemCategory { get; set; } = null!;
 }

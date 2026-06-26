@@ -45,6 +45,25 @@ namespace TireInventory.Data
             base.OnModelCreating(modelBuilder);
 
             // preserve any custom model configuration here (one-to-one, table mappings, etc.)
+            modelBuilder.Entity<ItemMaster>(entity =>
+            {
+                // The string value does not need to match your actual database trigger name
+                entity.ToTable("tbl_ItemMaster", tb => tb.HasTrigger("tg_ItemMaster_Insert"));
+            });              
+            
+            modelBuilder.Entity<InvoicePayments>(entity =>
+            {
+                // The string value does not need to match your actual database trigger name
+                entity.ToTable("tbl_Invoice_Payment", tb => tb.HasTrigger("tg_Invoice_Payment_Insert"));
+            });              
+            
+            modelBuilder.Entity<LayawayPayments>(entity =>
+            {
+                // The string value does not need to match your actual database trigger name
+                entity.ToTable("tbl_Layaway_Payment", tb => tb.HasTrigger("tg_tbl_Layaway_Payment_Insert"));
+            });  
+            
+
         }
     }
 }
