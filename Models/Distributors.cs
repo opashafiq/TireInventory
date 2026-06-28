@@ -16,7 +16,7 @@ namespace TireInventory.Models
         public string UserName { get; set; }
         public DateTime? SetDate { get; set; }
 
-        public virtual ICollection<ItemMaster> tbl_ItemMasters { get; set; } = new List<ItemMaster>();
+        //public virtual ICollection<ItemMaster> tbl_ItemMasters { get; set; } = new List<ItemMaster>();
 
     }
 }

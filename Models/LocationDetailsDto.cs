@@ -14,6 +14,9 @@ namespace TireInventory.Models
         public string? tbld_Phone { get; set; }
         public string? tbld_Fax { get; set; }
         public string? tbld_Email { get; set; }
+        public string UserName { get; set; } = null!;
+
+        public DateTime SetDate { get; set; }
         public string CompanyName { get; set; } = string.Empty; // resolved name
     }
 }

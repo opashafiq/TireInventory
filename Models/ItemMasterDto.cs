@@ -19,6 +19,8 @@ namespace TireInventory.Models
         public int? tbim_DistributorId { get; set; }
         public decimal? tbim_OURP { get; set; }
         public long tbim_LocationId { get; set; }
+        public string UserName { get; set; } = null!;
+        public DateTime SetDate { get; set; }
 
         // Resolved names for foreign keys
         public string DepartmentName { get; set; } = string.Empty;

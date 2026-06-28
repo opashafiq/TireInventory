@@ -38,6 +38,8 @@ namespace TireInventory.Controllers
                     tbld_Phone = ld.tbld_Phone,
                     tbld_Fax = ld.tbld_Fax,
                     tbld_Email = ld.tbld_Email,
+                    UserName = ld.UserName,
+                    SetDate = ld.SetDate,
                     CompanyName = ld.CompanyInfo != null ? ld.CompanyInfo.tbbiBusinessName : string.Empty
                 })
                 .ToListAsync();
@@ -64,6 +66,8 @@ namespace TireInventory.Controllers
                     tbld_Phone = ld.tbld_Phone,
                     tbld_Fax = ld.tbld_Fax,
                     tbld_Email = ld.tbld_Email,
+                    UserName = ld.UserName,
+                    SetDate = ld.SetDate,
                     CompanyName = ld.CompanyInfo != null ? ld.CompanyInfo.tbbiBusinessName : string.Empty
                 })
                 .FirstOrDefaultAsync();
