@@ -34,8 +34,8 @@ public partial class LocationDetails
 
     public DateTime SetDate { get; set; }
 
-    public virtual CompanyInfo CompanyInfo { get; set; } = null!;
+    public virtual CompanyInfo? CompanyInfo { get; set; } = null!;
 
-    public virtual ICollection<ItemMaster> tbl_ItemMasters { get; set; } = new List<ItemMaster>();
-    public virtual ICollection<DailyExpense> DailyExpense { get; set; } = new List<DailyExpense>();
+    //public virtual ICollection<ItemMaster> tbl_ItemMasters { get; set; } = new List<ItemMaster>();
+    //public virtual ICollection<DailyExpense> DailyExpense { get; set; } = new List<DailyExpense>();
 }

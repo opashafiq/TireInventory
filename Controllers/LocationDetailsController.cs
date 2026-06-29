@@ -108,12 +108,13 @@ namespace TireInventory.Controllers
 
         // POST: api/LocationDetails
         [HttpPost]
-        public async Task<ActionResult<LocationDetails>> PostLocationDetails(LocationDetails locationDetails)
+        public async Task<ActionResult<LocationDetailsDto>> PostLocationDetails(LocationDetails locationDetails)
         {
             _context.LocationDetails.Add(locationDetails);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetLocationDetails", new { id = locationDetails.Id }, locationDetails);
+            return await GetLocationDetails(locationDetails.Id);
+            //return CreatedAtAction("GetLocationDetails", new { id = locationDetails.Id }, locationDetails);
         }
 
         // DELETE: api/LocationDetails/5

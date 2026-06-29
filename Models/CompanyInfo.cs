@@ -34,5 +34,5 @@ public partial class CompanyInfo
 
     public DateTime SetDate { get; set; }
 
-    public virtual ICollection<LocationDetails> LocationDetail { get; set; } = new List<LocationDetails>();
+    //public virtual ICollection<LocationDetails> LocationDetail { get; set; } = new List<LocationDetails>();
 }

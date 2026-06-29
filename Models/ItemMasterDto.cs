@@ -19,6 +19,7 @@ namespace TireInventory.Models
         public int? tbim_DistributorId { get; set; }
         public decimal? tbim_OURP { get; set; }
         public long tbim_LocationId { get; set; }
+        public DateTime? tbim_ThrashDate { get; set; }
         public string UserName { get; set; } = null!;
         public DateTime SetDate { get; set; }
 

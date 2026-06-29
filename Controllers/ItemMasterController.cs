@@ -55,6 +55,7 @@ namespace TireInventory.Controllers
                                   DepartmentName = dep.Tbid_DepartmentName,
                                   DistributorName = dis.Name,
                                   LocationName = loc.tbld_LocationName,
+                                  tbim_ThrashDate = im.tbim_ThrashDate,
                                   UserName = im.UserName,
                                   SetDate = im.SetDate
 
@@ -94,6 +95,9 @@ namespace TireInventory.Controllers
                                  tbim_OURP = im.tbim_OURP,
                                  tbim_LocationId = im.tbim_LocationId,
                                  DepartmentName = dep.Tbid_DepartmentName,
+                                 DistributorName = dis.Name,
+                                 LocationName = loc.tbld_LocationName,
+                                 tbim_ThrashDate = im.tbim_ThrashDate,
                                  UserName = im.UserName,
                                  SetDate = im.SetDate
                              })
@@ -136,12 +140,13 @@ namespace TireInventory.Controllers
 
         // POST: api/ItemMaster
         [HttpPost]
-        public async Task<ActionResult<ItemMaster>> PostItemMaster(ItemMaster itemMaster)
+        public async Task<ActionResult<ItemMasterDto>> PostItemMaster(ItemMaster itemMaster)
         {
             _context.ItemMasters.Add(itemMaster);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetItemMaster", new { id = itemMaster.Id }, itemMaster);
+            return await GetItemMaster(itemMaster.Id);
+            //return CreatedAtAction("GetItemMaster", new { id = itemMaster.Id }, itemMaster);
         }
 
         // DELETE: api/ItemMaster/5

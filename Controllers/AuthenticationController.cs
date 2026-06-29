@@ -70,11 +70,21 @@ namespace TireInventory.Controllers
                 return BadRequest("Role already exists.");
             }
 
-            var roleResult = await _roleManager.CreateAsync(new IdentityRole(model.RoleName));
+            // 1. Create the instance explicitly
+            var newRole = new IdentityRole(model.RoleName);
+
+            // 2. Pass it to the RoleManager
+            var roleResult = await _roleManager.CreateAsync(newRole);
+
 
             if (roleResult.Succeeded)
             {
-                return Ok(new { Message = $"Role {model.RoleName} created successfully!" });
+                // 3. The 'Id' property is now populated automatically
+                string newRoleId = newRole.Id;
+                var role = await _roleManager.FindByIdAsync(newRoleId);
+
+                //return Ok(new { Message = $"Role {model.RoleName} created successfully!" });
+                return CreatedAtAction("GetRoleById", new { id = newRoleId }, role);
             }
 
             return BadRequest(roleResult.Errors);
