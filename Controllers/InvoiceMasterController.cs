@@ -194,30 +194,31 @@ namespace TireInventory.Controllers
 
         // POST: api/InvoiceMaster
         [HttpPost]
-        public async Task<ActionResult<InvoiceMaster>> PostInvoiceMaster(InvoiceMaster invoiceMaster)
+        public async Task<ActionResult<InvoiceMasterDto>> PostInvoiceMaster(InvoiceMaster invoiceMaster)
         {
             _context.InvoiceMasters.Add(invoiceMaster);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetInvoiceMaster", new { id = invoiceMaster.Id }, invoiceMaster);
+            return await GetInvoiceMaster(invoiceMaster.Id);
+            //return CreatedAtAction("GetInvoiceMaster", new { id = invoiceMaster.Id }, invoiceMaster);
         }
 
         // POST: api/InvoiceMaster/CreateInvoice
         // Accepts a master, a list of details and a list of payments.
         // Inserts master first, then inserts details and payments with FK set to master.Id
         [HttpPost("CreateInvoice")]
-        public async Task<ActionResult<InvoiceMaster>> CreateInvoice(CreateInvoiceDto dto)
+        public async Task<ActionResult<InvoiceMaster>> CreateInvoice(CreateInvoice createInvoice)
         {
-            if (dto == null) return BadRequest();
+            if (createInvoice == null) return BadRequest();
 
-            var invoiceMaster = dto.Invoice ?? new InvoiceMaster();
+            var invoiceMaster = createInvoice.Invoice ?? new InvoiceMaster();
 
             // Add master first to obtain generated Id
             _context.InvoiceMasters.Add(invoiceMaster);
             await _context.SaveChangesAsync();
 
             // DETAILS: set FK and enrich from ItemMaster/Departments/Distributors as before
-            var details = dto.InvoiceDetails ?? new List<InvoiceDetails>();
+            var details = createInvoice.InvoiceDetails ?? new List<InvoiceDetails>();
             foreach (var d in details)
             {
                 d.tbid_InvoiceId = invoiceMaster.Id;
@@ -265,7 +266,7 @@ namespace TireInventory.Controllers
             }
 
             // PAYMENTS: set FK to created master Id and insert
-            var payments = dto.InvoicePayments ?? new List<InvoicePayments>();
+            var payments = createInvoice.InvoicePayments ?? new List<InvoicePayments>();
             foreach (var p in payments)
             {
                 p.tbip_InvoiceId = invoiceMaster.Id;
