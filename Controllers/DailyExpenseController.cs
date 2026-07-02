@@ -110,12 +110,12 @@ namespace TireInventory.Controllers
 
         // POST: api/DailyExpense
         [HttpPost]
-        public async Task<ActionResult<DailyExpense>> PostDailyExpense(DailyExpense dailyExpense)
+        public async Task<ActionResult<DailyExpenseDto>> PostDailyExpense(DailyExpense dailyExpense)
         {
             _context.DailyExpenses.Add(dailyExpense);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetDailyExpense", new { id = dailyExpense.Id }, dailyExpense);
+            return await GetDailyExpense(dailyExpense.Id);
         }
 
         // DELETE: api/DailyExpense/5
