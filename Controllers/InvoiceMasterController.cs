@@ -1,12 +1,19 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata;
+using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileSystemGlobbing.Internal;
+using Microsoft.Extensions.Hosting;
 using TireInventory.Data;
 using TireInventory.Models;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace TireInventory.Controllers
 {
@@ -23,44 +30,6 @@ namespace TireInventory.Controllers
         }
 
         // GET: api/InvoiceMaster
-        [HttpGet]
-
-
-        //public async Task<ActionResult<IEnumerable<InvoiceMasterDto>>> GetInvoiceMasters()
-        //{
-        //    var list = await _context.InvoiceMasters
-        //        .Select(m => new InvoiceMasterDto
-        //        {
-        //            Id = m.Id,
-        //            tbim_Phone = m.tbim_Phone,
-        //            tbim_InvDate = m.tbim_InvDate,
-        //            tbim_Name = m.tbim_Name,
-        //            tbim_TaxId = m.tbim_TaxId,
-        //            tbim_VehicleMake = m.tbim_VehicleMake,
-        //            tbim_Model = m.tbim_Model,
-        //            tbim_Year = m.tbim_Year,
-        //            tbim_Odometer = m.tbim_Odometer,
-        //            tbim_SubTotal = m.tbim_SubTotal,
-        //            tbim_SaleTax = m.tbim_SaleTax,
-        //            tbim_Labour = m.tbim_Labour,
-        //            tbim_DisPer = m.tbim_DisPer,
-        //            tbim_DisAmt = m.tbim_DisAmt,
-        //            tbim_Total = m.tbim_Total,
-        //            tbim_PaidAmt = m.tbim_PaidAmt,
-        //            tbim_PayInfo = m.tbim_PayInfo,
-        //            tbim_Note = m.tbim_Note,
-        //            tbim_LocationDetailsId = m.tbim_LocationDetailsId,
-        //            UserName = m.UserName,
-        //            SetDate = m.SetDate,
-        //            LocationName = m.tbim_LocationDetails != null ? m.tbim_LocationDetails.tbld_LocationName : string.Empty,
-        //            TaxCompanyName = m.tbim_Tax != null ? m.tbim_Tax.tbti_ComName : string.Empty
-        //        })
-        //        .ToListAsync();
-
-        //    return Ok(list);
-        //}
-
-
         [HttpGet]
         public async Task<ActionResult<IEnumerable<CreateInvoiceDto>>> GetInvoiceMasters([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
@@ -92,42 +61,6 @@ namespace TireInventory.Controllers
 
         // GET: api/InvoiceMaster/5
         [HttpGet("{id}")]
-        //public async Task<ActionResult<InvoiceMasterDto>> GetInvoiceMaster(long id)
-        //{
-        //    var dto = await _context.InvoiceMasters
-        //        .Where(m => m.Id == id)
-        //        .Select(m => new InvoiceMasterDto
-        //        {
-        //            Id = m.Id,
-        //            tbim_Phone = m.tbim_Phone,
-        //            tbim_InvDate = m.tbim_InvDate,
-        //            tbim_Name = m.tbim_Name,
-        //            tbim_TaxId = m.tbim_TaxId,
-        //            tbim_VehicleMake = m.tbim_VehicleMake,
-        //            tbim_Model = m.tbim_Model,
-        //            tbim_Year = m.tbim_Year,
-        //            tbim_Odometer = m.tbim_Odometer,
-        //            tbim_SubTotal = m.tbim_SubTotal,
-        //            tbim_SaleTax = m.tbim_SaleTax,
-        //            tbim_Labour = m.tbim_Labour,
-        //            tbim_DisPer = m.tbim_DisPer,
-        //            tbim_DisAmt = m.tbim_DisAmt,
-        //            tbim_Total = m.tbim_Total,
-        //            tbim_PaidAmt = m.tbim_PaidAmt,
-        //            tbim_PayInfo = m.tbim_PayInfo,
-        //            tbim_Note = m.tbim_Note,
-        //            tbim_LocationDetailsId = m.tbim_LocationDetailsId,
-        //            UserName = m.UserName,
-        //            SetDate = m.SetDate,
-        //            LocationName = m.tbim_LocationDetails != null ? m.tbim_LocationDetails.tbld_LocationName : string.Empty,
-        //            TaxCompanyName = m.tbim_Tax != null ? m.tbim_Tax.tbti_ComName : string.Empty
-        //        })
-        //        .FirstOrDefaultAsync();
-
-        //    if (dto == null) return NotFound();
-        //    return Ok(dto);
-        //}
-        
         public async Task<ActionResult<CreateInvoiceDto>> GetInvoiceMaster(long id)
         {
             var invoiceMaster = await _context.InvoiceMasters
@@ -141,110 +74,63 @@ namespace TireInventory.Controllers
         }
 
 
-        // GET: api/InvoiceMaster/{id}/details
-        [HttpGet("{id}/details")]
-        public async Task<ActionResult<IEnumerable<InvoiceDetailsDto>>> GetInvoiceDetailsByInvoice(long id)
-        {
-            var list = await _context.InvoiceDetails
-                .Where(d => d.tbid_InvoiceId == id)
-                .Select(d => new InvoiceDetailsDto
-                {
-                    Id = d.Id,
-                    tbid_InvoiceId = d.tbid_InvoiceId,
-                    tbid_ItemId = d.tbid_ItemId,
-                    tbid_ItemCategory = d.tbid_ItemCategory,
-                    tbid_DepartmentName = d.tbid_DepartmentName,
-                    tbid_Size = d.tbid_Size,
-                    tbid_Brand = d.tbid_Brand,
-                    tbid_Series = d.tbid_Series,
-                    tbid_Bolt = d.tbid_Bolt,
-                    tbid_HoleS = d.tbid_HoleS,
-                    tbid_Zone = d.tbid_Zone,
-                    tbid_DistributorId = d.tbid_DistributorId,
-                    tbid_DistributorName = d.tbid_DistributorName,
-                    tbid_Qty = d.tbid_Qty,
-                    tbid_Taxable = d.tbid_Taxable,
-                    tbid_UnitPrice = d.tbid_UnitPrice,
-                    tbid_LineTotal = d.tbid_LineTotal,
-                    tbid_TaxAmt = d.tbid_TaxAmt,
-                    ItemDepartmentName = d.tbid_Item != null && d.tbid_Item.tbim_ItemCategory != null
-                        ? d.tbid_Item.tbim_ItemCategory.Tbid_DepartmentName : string.Empty,
-                    ItemDistributorName = d.tbid_Item != null && d.tbid_Item.tbim_Distributor != null
-                        ? d.tbid_Item.tbim_Distributor.Name : string.Empty,
-                    ItemLocationName = d.tbid_Item != null && d.tbid_Item.tbim_Location != null
-                        ? d.tbid_Item.tbim_Location.tbld_LocationName : string.Empty,
-                    ItemDisplay = d.tbid_Item != null
-                        ? (d.tbid_Item.tbim_Brand + " " + d.tbid_Item.tbim_Size).Trim() : string.Empty
-                })
-                .ToListAsync();
-
-            return Ok(list);
-        }
-
-        // GET: api/InvoiceMaster/{id}/payments
-        [HttpGet("{id}/payments")]
-        public async Task<ActionResult<IEnumerable<InvoicePaymentsDto>>> GetInvoicePaymentsByInvoice(long id)
-        {
-            var list = await (from p in _context.InvoicePayments
-                              join pay in _context.PaymentNames
-                                  on p.tbip_PaymentId equals pay.Id into gj
-                              from pay in gj.DefaultIfEmpty()
-                              where p.tbip_InvoiceId == id
-                              select new InvoicePaymentsDto
-                              {
-                                  Id = p.Id,
-                                  tbip_InvoiceId = p.tbip_InvoiceId,
-                                  tbip_PaymentId = p.tbip_PaymentId,
-                                  tbip_PayAmt = p.tbip_PayAmt,
-                                  tbip_Date = p.tbip_Date,
-                                  tbip_PaymentTypeId = p.tbip_PaymentTypeId,
-                                  PaymentName = pay != null ? pay.tbpn_PaymentName : string.Empty
-                              })
-                             .ToListAsync();
-
-            return Ok(list);
-        }
-
-
         // PUT: api/InvoiceMaster/5
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutInvoiceMaster(long id, InvoiceMaster invoiceMaster)
-        {
-            if (id != invoiceMaster.Id)
-            {
-                return BadRequest();
-            }
+        //[HttpPut("{id}")]
 
-            _context.Entry(invoiceMaster).State = EntityState.Modified;
+        /*
+        1. The Strategy: "Upsert & Purge" Pattern
+        The most robust way to handle this in a REST API without creating messy, stateful logic is the Upsert & Purge pattern.
+        Instead of tracking what the user clicked on the frontend, your Next.js application simply sends the entire current state of the invoice details and payments back to the API. The API then compares what is in the database with what the user sent:
+        - If a row has an Id > 0, Update it.
+        - If a row has an Id == 0, Insert it.
+        - Any row currently in the database that is missing from the payload is Deleted.
+
+        The Tracking State: When you fetch the InvoiceMaster from the database using .Include(m => m.InvoiceDetails), EF Core loads those records into memory and starts "tracking" them. It keeps a secret snapshot copy of what the data looked like the moment it was loaded.
+        In-Memory Modification: When you loop through your list and write existingDetail.tbid_Qty = detailDto.tbid_Qty;, you are directly modifying that object in the server's RAM.
+        The Detect Changes Phase: When you finally call await _context.SaveChangesAsync(), EF Core automatically triggers its Change Tracker. It scans all tracked objects in memory and compares them line-by-line against their original snapshots.
+
+        / Purge Step: Remove payments deleted in UI
+        var incomingPaymentIds = dto.InvoicePayments.Where(p => p.Id > 0).Select(p => p.Id).ToList();
+        var paymentsToRemove = invoiceMaster.InvoicePayments.Where(p => !incomingPaymentIds.Contains(p.Id)).ToList();
+        _context.InvoicePayments.RemoveRange(paymentsToRemove);
+        */
+
+        // POST: api/InvoiceMaster/EditInvoice
+        [HttpPost("EditInvoice")]
+        public async Task<IActionResult> EditInvoice(long id, CreateInvoiceDto createInvoiceDto)
+        {
+            if (createInvoiceDto == null) return BadRequest();
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
 
             try
             {
+                // 2. Fetch the existing master record along with current line details and payments
+                var invoiceMaster = await _context.InvoiceMasters
+                .Include(m => m.InvoiceDetails)
+                .Include(m => m.InvoicePayments)
+                .FirstOrDefaultAsync(m => m.Id == id);
+
+                // Update invoiceMaster
+                UpdateInvoiceMaster(invoiceMaster, createInvoiceDto.invoiceMasterDto ?? new InvoiceMasterDto());
+                _context.Entry(invoiceMaster).State = EntityState.Modified;
+
+                // 2. Process Details update
+                ProcessInvoiceDetailsUpsert(invoiceMaster, createInvoiceDto.invoiceDetailsDto ?? new List<InvoiceDetailsDto>());
+                // 3. Process Payments update
+                ProcessInvoicePaymentsUpsert(invoiceMaster, createInvoiceDto.invoicePaymentsDto ?? new List<InvoicePaymentsDto>());
+
+                // Save everything atomically
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return Ok(new { Message = "Invoice adjusted successfully", InvoiceId = id });
             }
-            catch (DbUpdateConcurrencyException)
+            catch (Exception ex)
             {
-                if (!InvoiceMasterExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                await transaction.RollbackAsync();
+                // Log the exception here (e.g., _logger.LogError(ex, "Error updating invoice..."))
+                return StatusCode(500, "An error occurred while updating the invoice tracking entities.");
             }
-
-            return NoContent();
-        }
-
-        // POST: api/InvoiceMaster
-        [HttpPost]
-        public async Task<ActionResult<CreateInvoiceDto>> PostInvoiceMaster(InvoiceMaster invoiceMaster)
-        {
-            _context.InvoiceMasters.Add(invoiceMaster);
-            await _context.SaveChangesAsync();
-
-            return await GetInvoiceMaster(invoiceMaster.Id);
-            //return CreatedAtAction("GetInvoiceMaster", new { id = invoiceMaster.Id }, invoiceMaster);
         }
 
         // POST: api/InvoiceMaster/CreateInvoice
@@ -262,6 +148,7 @@ namespace TireInventory.Controllers
             {
                 // Add master first to obtain generated Id
                 _context.InvoiceMasters.Add(invoiceMaster);
+                // Save to get InvoiceMaster add that will be the foreign key to details and payment table
                 await _context.SaveChangesAsync();
 
                 // DETAILS: set FK and enrich from ItemMaster/Departments/Distributors as before
@@ -309,7 +196,9 @@ namespace TireInventory.Controllers
                 if (details.Count > 0)
                 {
                     _context.InvoiceDetails.AddRange(details);
-                    await _context.SaveChangesAsync();
+                    // No need to save now, cause it's id is not going to be used in any of table.
+                    // Will save later
+                    //await _context.SaveChangesAsync();
                 }
 
                 // PAYMENTS: set FK to created master Id and insert
@@ -324,13 +213,18 @@ namespace TireInventory.Controllers
                 if (payments.Count > 0)
                 {
                     _context.InvoicePayments.AddRange(payments);
-                    await _context.SaveChangesAsync();
+                    // No need to save now, cause it's id is not going to be used in any of table.
+                    // Will save later
+                    //await _context.SaveChangesAsync();
                 }
 
+
+                //Save all changes made in the context
+                await _context.SaveChangesAsync();
                 // Optionally load created invoice with details and payments to return
                 var created = await _context.InvoiceMasters
-                    .Include(m => m.tbl_Invoice_Details)
-                    .Include(m => m.tbl_Invoice_Payments)
+                    .Include(m => m.InvoiceDetails)
+                    .Include(m => m.InvoicePayments)
                     .FirstOrDefaultAsync(m => m.Id == invoiceMaster.Id);
 
                 await transaction.CommitAsync();
@@ -383,6 +277,7 @@ namespace TireInventory.Controllers
             return new InvoiceMasterDto
             {
                 Id = invoiceMaster.Id,
+                tbim_InvoiceIdRad = invoiceMaster.tbim_InvoiceIdRad,
                 tbim_Phone = invoiceMaster.tbim_Phone,
                 tbim_InvDate = invoiceMaster.tbim_InvDate,
                 tbim_Name = invoiceMaster.tbim_Name,
@@ -391,6 +286,8 @@ namespace TireInventory.Controllers
                 tbim_Model = invoiceMaster.tbim_Model,
                 tbim_Year = invoiceMaster.tbim_Year,
                 tbim_Odometer = invoiceMaster.tbim_Odometer,
+                tbim_TreadDepth = invoiceMaster.tbim_TreadDepth,
+                tbim_License = invoiceMaster.tbim_License,
                 tbim_SubTotal = invoiceMaster.tbim_SubTotal,
                 tbim_SaleTax = invoiceMaster.tbim_SaleTax,
                 tbim_Labour = invoiceMaster.tbim_Labour,
@@ -398,11 +295,26 @@ namespace TireInventory.Controllers
                 tbim_DisAmt = invoiceMaster.tbim_DisAmt,
                 tbim_Total = invoiceMaster.tbim_Total,
                 tbim_PaidAmt = invoiceMaster.tbim_PaidAmt,
+                tbim_AdjAmt = invoiceMaster.tbim_AdjAmt,
+                tbim_AdjTotal = invoiceMaster.tbim_AdjTotal,
                 tbim_PayInfo = invoiceMaster.tbim_PayInfo,
                 tbim_Note = invoiceMaster.tbim_Note,
-                tbim_LocationDetailsId = invoiceMaster.tbim_LocationDetailsId,
+                tbim_Delinfo = invoiceMaster.tbim_Delinfo,
+                tbim_CompanyName = invoiceMaster.tbim_CompanyName,
+                tbim_CompanyAddress = invoiceMaster.tbim_CompanyAddress,
+                tbim_Item_Delete_after_Invoice_Create = invoiceMaster.tbim_Item_Delete_after_Invoice_Create,
+                tbim_LaywayNo = invoiceMaster.tbim_LaywayNo,
+                tbim_LaywayDate = invoiceMaster.tbim_LaywayDate,
                 UserName = invoiceMaster.UserName,
                 SetDate = invoiceMaster.SetDate,
+                tbim_Left_Front = invoiceMaster.tbim_Left_Front,
+                tbim_Right_Front = invoiceMaster.tbim_Right_Front,
+                tbim_Left_Rear = invoiceMaster.tbim_Left_Rear,
+                tbim_Right_Rear = invoiceMaster.tbim_Right_Rear,
+                tbim_EmailAddress = invoiceMaster.tbim_EmailAddress,
+                tbim_IDNo = invoiceMaster.tbim_IDNo,
+                tbim_RefundType = invoiceMaster.tbim_RefundType,
+                tbim_LocationDetailsId = invoiceMaster.tbim_LocationDetailsId,
                 LocationName = invoiceMaster.tbim_LocationDetails != null ? invoiceMaster.tbim_LocationDetails.tbld_LocationName : string.Empty,
                 TaxCompanyName = invoiceMaster.tbim_Tax != null ? invoiceMaster.tbim_Tax.tbti_ComName : string.Empty
             };
@@ -461,7 +373,7 @@ namespace TireInventory.Controllers
                                  tbip_PaymentId = p.tbip_PaymentId,
                                  tbip_PayAmt = p.tbip_PayAmt,
                                  tbip_Date = p.tbip_Date,
-                                 tbip_PaymentTypeId = p.tbip_PaymentTypeId,
+                                 tbip_PaymentType = p.tbip_PaymentType,
                                  tbip_LayawayId = p.tbip_LayawayId,
                                  tdip_fromlayaway = p.tdip_fromlayaway,
                                  tbip_LayawayDate = p.tbip_LayawayDate,
@@ -562,7 +474,7 @@ namespace TireInventory.Controllers
                     tbip_PaymentId = dto.tbip_PaymentId,
                     tbip_PayAmt = dto.tbip_PayAmt,
                     tbip_Date = dto.tbip_Date,
-                    tbip_PaymentTypeId = dto.tbip_PaymentTypeId,
+                    tbip_PaymentType = dto.tbip_PaymentType,
                     tbip_LayawayId= dto.tbip_LayawayId,
                     tdip_fromlayaway= dto.tdip_fromlayaway,
                     tbip_LayawayDate = dto.tbip_LayawayDate
@@ -570,6 +482,175 @@ namespace TireInventory.Controllers
                 list.Add(payment);
             }
             return list;
+        }
+
+        private void UpdateInvoiceMaster(InvoiceMaster im,InvoiceMasterDto dto)
+        {
+            im.Id = dto.Id;
+            im.tbim_InvoiceIdRad = dto.tbim_InvoiceIdRad;
+            im.tbim_Phone = dto.tbim_Phone;
+            im.tbim_InvDate = dto.tbim_InvDate;
+            im.tbim_Name = dto.tbim_Name;
+            im.tbim_TaxId = dto.tbim_TaxId;
+            im.tbim_VehicleMake = dto.tbim_VehicleMake;
+            im.tbim_Model = dto.tbim_Model;
+            im.tbim_Year = dto.tbim_Year;
+            im.tbim_Odometer = dto.tbim_Odometer;
+            im.tbim_TreadDepth = dto.tbim_TreadDepth;
+            im.tbim_License = dto.tbim_License;
+            im.tbim_SubTotal = dto.tbim_SubTotal;
+            im.tbim_SaleTax = dto.tbim_SaleTax;
+            im.tbim_Labour = dto.tbim_Labour;
+            im.tbim_DisPer = dto.tbim_DisPer;
+            im.tbim_DisAmt = dto.tbim_DisAmt;
+            im.tbim_Total = dto.tbim_Total;
+            im.tbim_PaidAmt = dto.tbim_PaidAmt;
+            im.tbim_AdjAmt = dto.tbim_AdjAmt;
+            im.tbim_AdjTotal = dto.tbim_AdjTotal;
+            im.tbim_PayInfo = dto.tbim_PayInfo;
+            im.tbim_Note = dto.tbim_Note;
+            im.tbim_Delinfo = dto.tbim_Delinfo;
+            im.tbim_CompanyName = dto.tbim_CompanyName;
+            im.tbim_CompanyAddress = dto.tbim_CompanyAddress;
+            im.tbim_Item_Delete_after_Invoice_Create = dto.tbim_Item_Delete_after_Invoice_Create;
+            im.tbim_LaywayNo = dto.tbim_LaywayNo;
+            im.tbim_LaywayDate = dto.tbim_LaywayDate;
+            im.UserName = dto.UserName;
+            im.SetDate = dto.SetDate;
+            im.tbim_Left_Front = dto.tbim_Left_Front;
+            im.tbim_Right_Front = dto.tbim_Right_Front;
+            im.tbim_Left_Rear = dto.tbim_Left_Rear;
+            im.tbim_Right_Rear = dto.tbim_Right_Rear;
+            im.tbim_EmailAddress = dto.tbim_EmailAddress;
+            im.tbim_IDNo = dto.tbim_IDNo;
+            im.tbim_RefundType = dto.tbim_RefundType;
+            im.tbim_LocationDetailsId = dto.tbim_LocationDetailsId;
+
+        }
+
+        private void ProcessInvoiceDetailsUpsert(InvoiceMaster invoiceMaster, List<InvoiceDetailsDto> incomingDetails)
+        {
+            // Purge removed records
+            var incomingDetailIds = incomingDetails.Where(d => d.Id > 0).Select(d => d.Id).ToList();
+            var detailsToRemove = invoiceMaster.InvoiceDetails.Where(d => !incomingDetailIds.Contains(d.Id)).ToList();
+            _context.InvoiceDetails.RemoveRange(detailsToRemove);
+
+            Distributors distributor = new Distributors();
+            // Upsert remaining records
+            foreach (var detailDto in incomingDetails)
+            {
+
+                if (detailDto.Id == 0)
+                {
+                    var itemMaster = _context.ItemMasters.Find(detailDto.tbid_ItemId.Value);
+                    var dept = _context.Departments.Find(itemMaster.tbim_ItemCategoryId);
+
+                    if (itemMaster.tbim_DistributorId.HasValue)
+                    {
+                        distributor = _context.Distributors.Find(itemMaster.tbim_DistributorId.Value);
+                    }
+
+                    invoiceMaster.InvoiceDetails.Add(new InvoiceDetails
+                    {
+                        tbid_InvoiceId = invoiceMaster.Id,
+                        tbid_ItemId = detailDto.tbid_ItemId,
+                        //tbid_ItemCategory = detailDto.tbid_ItemCategory,
+                        tbid_ItemCategory = itemMaster==null?null: (long?)itemMaster.tbim_ItemCategoryId,
+                        //tbid_DepartmentName = detailDto.tbid_DepartmentName,
+                        tbid_DepartmentName= dept?.Tbid_DepartmentName,
+                        tbid_Size = detailDto.tbid_Size,
+                        tbid_Brand = detailDto.tbid_Brand,
+                        tbid_Series = detailDto.tbid_Series,
+                        tbid_Bolt = detailDto.tbid_Bolt,
+                        tbid_HoleS = detailDto.tbid_HoleS,
+                        tbid_Zone = detailDto.tbid_Zone,
+                        tbid_DistributorId = detailDto.tbid_DistributorId,
+                        //tbid_DistributorName = detailDto.tbid_DistributorName,
+                        tbid_DistributorName= distributor?.Name,
+                        tbid_Qty = detailDto.tbid_Qty,
+                        tbid_Taxable = detailDto.tbid_Taxable,
+                        tbid_UnitPrice = detailDto.tbid_UnitPrice,
+                        tbid_LineTotal = detailDto.tbid_LineTotal,
+                        tbid_TaxAmt = detailDto.tbid_TaxAmt
+                    });
+                }
+                else
+                {
+                    var existingDetail = invoiceMaster.InvoiceDetails.FirstOrDefault(d => d.Id == detailDto.Id);
+
+                    var itemMaster = _context.ItemMasters.Find(detailDto.tbid_ItemId.Value);
+                    var dept = _context.Departments.Find(itemMaster.tbim_ItemCategoryId);
+
+                    if (itemMaster.tbim_DistributorId.HasValue)
+                    {
+                        distributor = _context.Distributors.Find(itemMaster.tbim_DistributorId.Value);
+                    }
+
+                    if (existingDetail != null)
+                    {
+                        existingDetail.tbid_InvoiceId = invoiceMaster.Id;
+                        existingDetail.tbid_ItemId = detailDto.tbid_ItemId;
+                        existingDetail.tbid_ItemCategory = itemMaster == null ? null : (long?)itemMaster.tbim_ItemCategoryId;
+                        existingDetail.tbid_DepartmentName = dept?.Tbid_DepartmentName;
+                        existingDetail.tbid_Size = detailDto.tbid_Size;
+                        existingDetail.tbid_Brand = detailDto.tbid_Brand;
+                        existingDetail.tbid_Series = detailDto.tbid_Series;
+                        existingDetail.tbid_Bolt = detailDto.tbid_Bolt;
+                        existingDetail.tbid_HoleS = detailDto.tbid_HoleS;
+                        existingDetail.tbid_Zone = detailDto.tbid_Zone;
+                        existingDetail.tbid_DistributorId = detailDto.tbid_DistributorId;
+                        existingDetail.tbid_DistributorName = distributor?.Name;
+                        existingDetail.tbid_Qty = detailDto.tbid_Qty;
+                        existingDetail.tbid_Taxable = detailDto.tbid_Taxable;
+                        existingDetail.tbid_UnitPrice = detailDto.tbid_UnitPrice;
+                        existingDetail.tbid_LineTotal = detailDto.tbid_LineTotal;
+                        existingDetail.tbid_TaxAmt = detailDto.tbid_TaxAmt;
+                    }
+                }
+            }
+        }
+
+
+        private void ProcessInvoicePaymentsUpsert(InvoiceMaster invoiceMaster, List<InvoicePaymentsDto> incomingPayments)
+        {
+            // Purge removed payments
+            var incomingPaymentIds = incomingPayments.Where(p => p.Id > 0).Select(p => p.Id).ToList();
+            var paymentsToRemove = invoiceMaster.InvoicePayments.Where(p => !incomingPaymentIds.Contains(p.Id)).ToList();
+            _context.InvoicePayments.RemoveRange(paymentsToRemove);
+
+            // Upsert payments
+            foreach (var payDto in incomingPayments)
+            {
+                if (payDto.Id == 0)
+                {
+                    invoiceMaster.InvoicePayments.Add(new InvoicePayments
+                    {
+                        tbip_InvoiceId = invoiceMaster.Id,
+                        tbip_PaymentId = payDto.tbip_PaymentId,
+                        tbip_PayAmt = payDto.tbip_PayAmt,
+                        tbip_Date = DateTime.UtcNow,
+                        tbip_PaymentType = payDto.tbip_PaymentType,
+                        tbip_LayawayId = payDto.tbip_LayawayId,
+                        tdip_fromlayaway = payDto.tdip_fromlayaway,
+                        tbip_LayawayDate = payDto.tbip_LayawayDate
+                    });
+                }
+                else
+                {
+                    var existingPayment = invoiceMaster.InvoicePayments.FirstOrDefault(p => p.Id == payDto.Id);
+                    if (existingPayment != null)
+                    {
+                        existingPayment.tbip_InvoiceId = invoiceMaster.Id;
+                        existingPayment.tbip_PaymentId = payDto.tbip_PaymentId;
+                        existingPayment.tbip_PayAmt = payDto.tbip_PayAmt;
+                        existingPayment.tbip_Date = payDto.tbip_Date;
+                        existingPayment.tbip_PaymentType = payDto.tbip_PaymentType;
+                        existingPayment.tbip_LayawayId = payDto.tbip_LayawayId;
+                        existingPayment.tdip_fromlayaway = payDto.tdip_fromlayaway;
+                        existingPayment.tbip_LayawayDate = payDto.tbip_LayawayDate;
+                    }
+                }
+            }
         }
 
     }

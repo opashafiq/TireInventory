@@ -8,7 +8,7 @@ namespace TireInventory.Models
         public long tbip_PaymentId { get; set; }
         public decimal? tbip_PayAmt { get; set; }
         public DateTime? tbip_Date { get; set; }
-        public string? tbip_PaymentTypeId { get; set; }
+        public string? tbip_PaymentType { get; set; }
         public long? tbip_LayawayId { get; set; }
 
         public string? tdip_fromlayaway { get; set; }

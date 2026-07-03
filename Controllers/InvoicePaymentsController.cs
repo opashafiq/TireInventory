@@ -35,7 +35,7 @@ namespace TireInventory.Controllers
                                   tbip_PaymentId = p.tbip_PaymentId,
                                   tbip_PayAmt = p.tbip_PayAmt,
                                   tbip_Date = p.tbip_Date,
-                                  tbip_PaymentTypeId = p.tbip_PaymentTypeId,
+                                  tbip_PaymentType = p.tbip_PaymentType,
                                   PaymentName = pay != null ? pay.tbpn_PaymentName : string.Empty
                               })
                              .ToListAsync();
@@ -59,7 +59,7 @@ namespace TireInventory.Controllers
                                  tbip_PaymentId = p.tbip_PaymentId,
                                  tbip_PayAmt = p.tbip_PayAmt,
                                  tbip_Date = p.tbip_Date,
-                                 tbip_PaymentTypeId = p.tbip_PaymentTypeId,
+                                 tbip_PaymentType = p.tbip_PaymentType,
                                  PaymentName = pay != null ? pay.tbpn_PaymentName : string.Empty
                              })
                             .FirstOrDefaultAsync();

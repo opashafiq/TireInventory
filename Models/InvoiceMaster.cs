@@ -90,7 +90,7 @@ public partial class InvoiceMaster
     // Foreign keys
     public virtual LocationDetails? tbim_LocationDetails { get; set; }
     public virtual TaxId? tbim_Tax { get; set; }
-    public virtual ICollection<InvoiceDetails> tbl_Invoice_Details { get; set; } = new List<InvoiceDetails>();
+    public virtual ICollection<InvoiceDetails> InvoiceDetails { get; set; } = new List<InvoiceDetails>();
 
-    public virtual ICollection<InvoicePayments> tbl_Invoice_Payments { get; set; } = new List<InvoicePayments>();
+    public virtual ICollection<InvoicePayments> InvoicePayments { get; set; } = new List<InvoicePayments>();
 }

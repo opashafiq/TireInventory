@@ -17,11 +17,7 @@ public partial class InvoicePayments
 
     public DateTime? tbip_Date { get; set; }
 
-    /// <summary>
-    /// P: For Payment with Invoice, D: Pending Pyment
-    /// </summary>
-    [Column("tbip_PaymentType")]
-    public string? tbip_PaymentTypeId { get; set; }
+    public string? tbip_PaymentType { get; set; }
 
     public long? tbip_LayawayId { get; set; }
 
@@ -30,5 +26,7 @@ public partial class InvoicePayments
     public DateTime? tbip_LayawayDate { get; set; }
 
     public virtual InvoiceMaster tbip_Invoice { get; set; } = null!;
-    public virtual PaymentNames? tbip_PaymentType { get; set; } 
+    // Tell EF Core that "tbip_PaymentId" is the foreign key for this navigation property
+    [ForeignKey(nameof(tbip_PaymentId))]
+    public virtual PaymentNames? tbip_Payment { get; set; } 
 }

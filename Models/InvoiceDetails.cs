@@ -43,6 +43,6 @@ public partial class InvoiceDetails
 
     public decimal tbid_TaxAmt { get; set; }
 
-    public virtual InvoiceMaster tbid_Invoice { get; set; } = null!;
+    public virtual InvoiceMaster? tbid_Invoice { get; set; } = null!;
     public virtual ItemMaster? tbid_Item { get; set; }
 }
