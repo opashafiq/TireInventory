@@ -28,6 +28,6 @@ public partial class InvoiceRefundMaster
 
     // Foreign key
     public virtual InvoiceMaster tbirm_Invoice { get; set; }
-    public virtual ICollection<InvoiceRefundDetails> tbl_Invoice_Refund_Details { get; set; } = new List<InvoiceRefundDetails>();
-    public virtual ICollection<InvoiceRefundPayments> tbl_Invoice_Refund_Payments { get; set; } = new List<InvoiceRefundPayments>();
+    public virtual ICollection<InvoiceRefundDetails> InvoiceRefundDetails { get; set; } = new List<InvoiceRefundDetails>();
+    public virtual ICollection<InvoiceRefundPayments> InvoiceRefundPayments { get; set; } = new List<InvoiceRefundPayments>();
 }
