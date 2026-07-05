@@ -41,14 +41,11 @@ public partial class LayawayMaster
     public bool tbim_Right_Rear { get; set; }
     public string? tbim_EmailAddress { get; set; }
     public string? tbim_IDNo { get; set; }
-    /// <summary>
-    /// F: Full Refund, P : Partial Refund, N: Not Refund
-    /// </summary>
     public string? tbim_RefundType { get; set; }
     public long? tbim_LocationId { get; set; }
     // Foreign keys
     public virtual TaxId? tbim_Tax { get; set; }
     public virtual LocationDetails? tbim_Location { get; set; }
-    public virtual ICollection<LayawayDetails> tbl_Layaway_Details { get; set; } = new List<LayawayDetails>();
-    public virtual ICollection<LayawayPayments> tbl_Layaway_Payments { get; set; } = new List<LayawayPayments>();
+    public virtual ICollection<LayawayDetails> LayawayDetails { get; set; } = new List<LayawayDetails>();
+    public virtual ICollection<LayawayPayments> LayawayPayments { get; set; } = new List<LayawayPayments>();
 }

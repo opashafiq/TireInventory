@@ -9,7 +9,7 @@ public partial class LayawayDetails
     public long Id { get; set; }
     public long tbid_InvoiceId { get; set; }
     public long? tbid_ItemId { get; set; }
-    public int? tbid_ItemCategory { get; set; }
+    public long? tbid_ItemCategory { get; set; }
     public string? tbid_DepartmentName { get; set; }
     public string? tbid_Size { get; set; }
     public string? tbid_Brand { get; set; }
