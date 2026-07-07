@@ -47,5 +47,9 @@ namespace TireInventory.Models
         // Resolved FK names
         public string LocationName { get; set; } = string.Empty;
         public string TaxCompanyName { get; set; } = string.Empty;
+        public string TaxIdentificationNumber { get; set; } = string.Empty;
+        public string TaxAddress { get; set; } = string.Empty;
+        public string TaxPhone { get; set; } = string.Empty;
+        public string PaymentMethodName { get; set; } = string.Empty;
     }
 }

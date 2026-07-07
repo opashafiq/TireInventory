@@ -39,6 +39,10 @@ namespace TireInventory.Controllers
 
             // 1. Fetch only the paginated slice of Master Invoices first (Eager load lookups)
             var invoiceMasters = await _context.InvoiceMasters
+                .Include(m => m.InvoiceDetails)
+                .Include(m => m.InvoicePayments)
+                .Include(m => m.tbim_Tax)
+                .Include(m => m.tbim_LocationDetails)
                 .OrderByDescending(m => m.tbim_InvDate) // Show newest invoices first
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
@@ -49,12 +53,16 @@ namespace TireInventory.Controllers
             foreach (var im in invoiceMasters)
             {
                 var dto = MapToCreateInvoiceDto(im);
+                //TestMapping(im); // Optional: for debugging or logging purposes
                 dtos.Add(dto);
             }
 
             // 3. Add pagination metadata headers so your Next.js SWR configuration knows total pages
             int totalRecords = await _context.InvoiceMasters.CountAsync();
             Response.Headers.Add("X-Total-Count", totalRecords.ToString());
+
+
+            
 
             return Ok(dtos);
         }
@@ -64,6 +72,11 @@ namespace TireInventory.Controllers
         public async Task<ActionResult<CreateInvoiceDto>> GetInvoiceMaster(long id)
         {
             var invoiceMaster = await _context.InvoiceMasters
+                .Include(m => m.InvoiceDetails)
+                .Include(m => m.InvoicePayments)
+                    .ThenInclude(m=>m.tbip_Payment)
+                .Include(m => m.tbim_Tax)
+                .Include(m => m.tbim_LocationDetails)
                 .Where(m => m.Id == id)
                 .FirstOrDefaultAsync();
 
@@ -109,6 +122,8 @@ namespace TireInventory.Controllers
                 var invoiceMaster = await _context.InvoiceMasters
                 .Include(m => m.InvoiceDetails)
                 .Include(m => m.InvoicePayments)
+                .Include(m => m.tbim_Tax)
+                .Include(m => m.tbim_LocationDetails)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
                 // Update invoiceMaster
@@ -272,6 +287,24 @@ namespace TireInventory.Controllers
             };
         }
 
+        private void TestMapping(InvoiceMaster invoiceMaster)
+        {
+           var testDto=_context.InvoicePayments.Where(p => p.tbip_InvoiceId == invoiceMaster.Id)
+                .Select(p => new InvoicePaymentsDto
+                {
+                    Id = p.Id,
+                    tbip_InvoiceId = p.tbip_InvoiceId,
+                    tbip_PaymentId = p.tbip_PaymentId,
+                    tbip_PayAmt = p.tbip_PayAmt,
+                    tbip_Date = p.tbip_Date,
+                    tbip_PaymentType = p.tbip_PaymentType,
+                    tbip_LayawayId = p.tbip_LayawayId,
+                    tdip_fromlayaway = p.tdip_fromlayaway,
+                    tbip_LayawayDate = p.tbip_LayawayDate
+                })
+                .ToList();  
+
+        }
         private InvoiceMasterDto MapToInvoiceMasterDto(InvoiceMaster invoiceMaster)
         {
             return new InvoiceMasterDto
@@ -316,7 +349,11 @@ namespace TireInventory.Controllers
                 tbim_RefundType = invoiceMaster.tbim_RefundType,
                 tbim_LocationDetailsId = invoiceMaster.tbim_LocationDetailsId,
                 LocationName = invoiceMaster.tbim_LocationDetails != null ? invoiceMaster.tbim_LocationDetails.tbld_LocationName : string.Empty,
-                TaxCompanyName = invoiceMaster.tbim_Tax != null ? invoiceMaster.tbim_Tax.tbti_ComName : string.Empty
+                TaxCompanyName = invoiceMaster.tbim_Tax != null ? invoiceMaster.tbim_Tax.tbti_ComName : string.Empty,
+                TaxIdentificationNumber = invoiceMaster.tbim_Tax != null ? invoiceMaster.tbim_Tax.tbti_TaxNumber : string.Empty,
+                TaxAddress = invoiceMaster.tbim_Tax != null ? invoiceMaster.tbim_Tax.tbti_Address : string.Empty,
+                TaxPhone = invoiceMaster.tbim_Tax != null ? invoiceMaster.tbim_Tax.tbti_Phone : string.Empty,
+                PaymentMethodName=string.Join(",", invoiceMaster.InvoicePayments.Select(p=>p.tbip_Payment.tbpn_PaymentName).Distinct().ToList()) ?? string.Empty
             };
         }
 
