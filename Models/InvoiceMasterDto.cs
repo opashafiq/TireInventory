@@ -44,7 +44,11 @@ namespace TireInventory.Models
         public string? tbim_IDNo { get; set; }
         public string? tbim_RefundType { get; set; }        
         public long? tbim_LocationDetailsId { get; set; }
+        // Retre
+        // Retreive the list of InvoicePayments when there is value in tbim_LaywayNo
+        public List<InvoicePayments>? LayawayRefund { get; set; } = new List<InvoicePayments>();
         // Resolved FK names
+        public decimal? RefundAmount { get; set; }
         public string LocationName { get; set; } = string.Empty;
         public string TaxCompanyName { get; set; } = string.Empty;
         public string TaxIdentificationNumber { get; set; } = string.Empty;

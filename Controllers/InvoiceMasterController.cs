@@ -43,6 +43,7 @@ namespace TireInventory.Controllers
                 .Include(m => m.InvoicePayments)
                 .Include(m => m.tbim_Tax)
                 .Include(m => m.tbim_LocationDetails)
+                .Include(m => m.InvoiceRefundMasters)
                 .OrderByDescending(m => m.tbim_InvDate) // Show newest invoices first
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
@@ -75,6 +76,7 @@ namespace TireInventory.Controllers
                 .Include(m => m.InvoiceDetails)
                 .Include(m => m.InvoicePayments)
                     .ThenInclude(m=>m.tbip_Payment)
+                .Include(m => m.InvoiceRefundMasters)
                 .Include(m => m.tbim_Tax)
                 .Include(m => m.tbim_LocationDetails)
                 .Where(m => m.Id == id)
@@ -124,6 +126,7 @@ namespace TireInventory.Controllers
                 .Include(m => m.InvoicePayments)
                 .Include(m => m.tbim_Tax)
                 .Include(m => m.tbim_LocationDetails)
+                .Include(m => m.InvoicePayments)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
                 // Update invoiceMaster
@@ -348,6 +351,8 @@ namespace TireInventory.Controllers
                 tbim_IDNo = invoiceMaster.tbim_IDNo,
                 tbim_RefundType = invoiceMaster.tbim_RefundType,
                 tbim_LocationDetailsId = invoiceMaster.tbim_LocationDetailsId,
+                //LayawayRefund=invoiceMaster.tbim_LaywayNo!=null? _context.InvoicePayments.Where(p => p.tbip_LayawayId == invoiceMaster.tbim_LaywayNo).ToList():new List<InvoicePayments>(),
+                RefundAmount = invoiceMaster.InvoiceRefundMasters != null & invoiceMaster.InvoiceRefundMasters.Count>0 ? invoiceMaster.InvoiceRefundMasters.FirstOrDefault().tbirm_RefundAmt : (decimal)0.00,
                 LocationName = invoiceMaster.tbim_LocationDetails != null ? invoiceMaster.tbim_LocationDetails.tbld_LocationName : string.Empty,
                 TaxCompanyName = invoiceMaster.tbim_Tax != null ? invoiceMaster.tbim_Tax.tbti_ComName : string.Empty,
                 TaxIdentificationNumber = invoiceMaster.tbim_Tax != null ? invoiceMaster.tbim_Tax.tbti_TaxNumber : string.Empty,

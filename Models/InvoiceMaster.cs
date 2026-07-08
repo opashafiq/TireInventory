@@ -53,4 +53,5 @@ public partial class InvoiceMaster
     public virtual TaxId? tbim_Tax { get; set; }
     public virtual ICollection<InvoiceDetails> InvoiceDetails { get; set; } = new List<InvoiceDetails>();
     public virtual ICollection<InvoicePayments> InvoicePayments { get; set; } = new List<InvoicePayments>();
+    public virtual ICollection<InvoiceRefundMaster> InvoiceRefundMasters { get; set; } = new List<InvoiceRefundMaster>();
 }
