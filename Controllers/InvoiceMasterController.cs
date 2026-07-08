@@ -41,9 +41,10 @@ namespace TireInventory.Controllers
             var invoiceMasters = await _context.InvoiceMasters
                 .Include(m => m.InvoiceDetails)
                 .Include(m => m.InvoicePayments)
+                    .ThenInclude(m => m.tbip_Payment)
+                .Include(m => m.InvoiceRefundMasters)
                 .Include(m => m.tbim_Tax)
                 .Include(m => m.tbim_LocationDetails)
-                .Include(m => m.InvoiceRefundMasters)
                 .OrderByDescending(m => m.tbim_InvDate) // Show newest invoices first
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
@@ -351,7 +352,9 @@ namespace TireInventory.Controllers
                 tbim_IDNo = invoiceMaster.tbim_IDNo,
                 tbim_RefundType = invoiceMaster.tbim_RefundType,
                 tbim_LocationDetailsId = invoiceMaster.tbim_LocationDetailsId,
-                //LayawayRefund=invoiceMaster.tbim_LaywayNo!=null? _context.InvoicePayments.Where(p => p.tbip_LayawayId == invoiceMaster.tbim_LaywayNo).ToList():new List<InvoicePayments>(),
+                LayawayRefund=invoiceMaster.tbim_LaywayNo!=null ?
+                              MapToInvoicePaymentsDtoByLayawayId(invoiceMaster.tbim_LaywayNo)
+                              :new List<InvoicePaymentsDto>(),
                 RefundAmount = invoiceMaster.InvoiceRefundMasters != null & invoiceMaster.InvoiceRefundMasters.Count>0 ? invoiceMaster.InvoiceRefundMasters.FirstOrDefault().tbirm_RefundAmt : (decimal)0.00,
                 LocationName = invoiceMaster.tbim_LocationDetails != null ? invoiceMaster.tbim_LocationDetails.tbld_LocationName : string.Empty,
                 TaxCompanyName = invoiceMaster.tbim_Tax != null ? invoiceMaster.tbim_Tax.tbti_ComName : string.Empty,
@@ -408,6 +411,32 @@ namespace TireInventory.Controllers
                                  on p.tbip_PaymentId equals pay.Id into gj
                              from pay in gj.DefaultIfEmpty()
                              where p.tbip_InvoiceId == Id
+                             select new InvoicePaymentsDto
+                             {
+                                 Id = p.Id,
+                                 tbip_InvoiceId = p.tbip_InvoiceId,
+                                 tbip_PaymentId = p.tbip_PaymentId,
+                                 tbip_PayAmt = p.tbip_PayAmt,
+                                 tbip_Date = p.tbip_Date,
+                                 tbip_PaymentType = p.tbip_PaymentType,
+                                 tbip_LayawayId = p.tbip_LayawayId,
+                                 tdip_fromlayaway = p.tdip_fromlayaway,
+                                 tbip_LayawayDate = p.tbip_LayawayDate,
+                                 PaymentName = pay != null ? pay.tbpn_PaymentName : string.Empty
+                             })
+                             .ToList();
+
+            return list;
+
+        } 
+        
+        private List<InvoicePaymentsDto> MapToInvoicePaymentsDtoByLayawayId(long? Id)
+        {
+            var list = (from p in _context.InvoicePayments
+                             join pay in _context.PaymentNames
+                                 on p.tbip_PaymentId equals pay.Id into gj
+                             from pay in gj.DefaultIfEmpty()
+                             where p.tbip_LayawayId == Id
                              select new InvoicePaymentsDto
                              {
                                  Id = p.Id,
