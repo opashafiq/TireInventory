@@ -148,7 +148,8 @@ namespace TireInventory.Controllers
             {
                 await transaction.RollbackAsync();
                 // Log the exception here (e.g., _logger.LogError(ex, "Error updating invoice..."))
-                return StatusCode(500, "An error occurred while updating the invoice tracking entities.");
+                //return StatusCode(500, "An error occurred while updating the invoice tracking entities.");
+                return StatusCode(500, ex.InnerException.Message.ToString());
             }
         }
 
@@ -161,6 +162,7 @@ namespace TireInventory.Controllers
             if (createInvoiceDto == null) return BadRequest();
 
             var invoiceMaster = MapToInvoiceMaster( createInvoiceDto.invoiceMasterDto ?? new InvoiceMasterDto());
+            invoiceMaster.tbim_InvoiceIdRad = GenerateTransactionID();
 
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
@@ -253,7 +255,8 @@ namespace TireInventory.Controllers
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                return StatusCode(500, "Critical database transaction failure while placing the order.");
+                //return StatusCode(501, "Critical database transaction failure while placing the order.");
+                return StatusCode(500, ex.InnerException.Message.ToString());
             }
 
             
@@ -352,7 +355,7 @@ namespace TireInventory.Controllers
                 tbim_IDNo = invoiceMaster.tbim_IDNo,
                 tbim_RefundType = invoiceMaster.tbim_RefundType,
                 tbim_LocationDetailsId = invoiceMaster.tbim_LocationDetailsId,
-                LayawayRefund=invoiceMaster.tbim_LaywayNo!=null ?
+                LayawayRefund=invoiceMaster.tbim_LaywayNo!=null & invoiceMaster.tbim_LaywayNo>0?
                               MapToInvoicePaymentsDtoByLayawayId(invoiceMaster.tbim_LaywayNo)
                               :new List<InvoicePaymentsDto>(),
                 RefundAmount = invoiceMaster.InvoiceRefundMasters != null & invoiceMaster.InvoiceRefundMasters.Count>0 ? invoiceMaster.InvoiceRefundMasters.FirstOrDefault().tbirm_RefundAmt : (decimal)0.00,
@@ -558,7 +561,7 @@ namespace TireInventory.Controllers
         private void UpdateInvoiceMaster(InvoiceMaster im,InvoiceMasterDto dto)
         {
             im.Id = dto.Id;
-            im.tbim_InvoiceIdRad = dto.tbim_InvoiceIdRad;
+            //im.tbim_InvoiceIdRad = dto.tbim_InvoiceIdRad;
             im.tbim_Phone = dto.tbim_Phone;
             im.tbim_InvDate = dto.tbim_InvDate;
             im.tbim_Name = dto.tbim_Name;
@@ -722,6 +725,18 @@ namespace TireInventory.Controllers
                     }
                 }
             }
+        }
+
+        private long? GenerateTransactionID()
+        {
+            // 1. Get current time as HHmmss
+            string timePart = DateTime.Now.ToString("HHmmss");
+
+            // 2. Generate random number up to 1,000,000
+            int randomPart = Random.Shared.Next(0, 1000000);
+
+            // 3. Combine them
+            return (long?)Convert.ToInt64( $"{timePart}{randomPart}");
         }
 
     }

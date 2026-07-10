@@ -163,6 +163,36 @@ namespace TireInventory.Controllers
             });
         }
 
+        // GET: api/getbyusername/{username}
+        [HttpGet("getbyusername/{username}")]
+        public async Task<ActionResult<IdentityUserDto>> GetByUserName(string username)
+        {
+            // 1. Find the user by ID
+            var user = await _userManager.FindByNameAsync(username);
+            if (user == null) return NotFound();
+
+            // 2. Fetch the user's assigned roles
+            var roles = (await _userManager.GetRolesAsync(user)).ToList();
+
+            // 3. Look up the specific location name from LocationDetails safely
+            var location = await _context.LocationDetails
+                .FirstOrDefaultAsync(l => l.Id == user.LocationId);
+
+            // 4. Return the fully mapped DTO
+            return Ok(new IdentityUserDto
+            {
+                Id = user.Id,
+                UserName = user.UserName ?? string.Empty,
+                FirstName = user.FirstName ?? string.Empty,
+                LastName = user.LastName ?? string.Empty,
+                IsActive = user.IsActive,
+                LocationId = user.LocationId,
+                LocationName = location?.tbld_LocationName ?? "Unknown Location", // Mapped field safely handling nulls
+                Email = user.Email ?? string.Empty,
+                Roles = roles
+            });
+        }
+
 
         // POST: api/ApplicationUser
         [HttpPost]
