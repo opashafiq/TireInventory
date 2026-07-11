@@ -31,14 +31,65 @@ namespace TireInventory.Controllers
 
         // GET: api/InvoiceMaster
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<CreateInvoiceDto>>> GetInvoiceMasters([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        public async Task<ActionResult<IEnumerable<CreateInvoiceDto>>> GetInvoiceMasters(
+            [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10,
+            [FromQuery] long? invoiceId=null,
+            [FromQuery] string? customerName=null,
+            [FromQuery] string? phoneNo=null,
+            [FromQuery] string? paymentSlot=null,
+            [FromQuery] DateTime? startDate=null,
+            [FromQuery] DateTime? endDate=null
+            )
         {
             // Fail-safe check to prevent massive memory overloads
             if (pageSize > 100) pageSize = 100;
             if (pageNumber < 1) pageNumber = 1;
 
+            // Start with a base, un-executed query
+            var query = _context.InvoiceMasters.AsNoTracking();
+
+            // Dynamically apply date filtering if parameters exist
+            if (startDate.HasValue)
+            {
+                // Evaluates to: >= 2026-04-08 00:00:00
+                query = query.Where(o => o.tbim_InvDate >= startDate.Value.Date);
+            }
+
+            if (endDate.HasValue)
+            {
+                // Crucial: Advance the day by 1 and subtract 1 tick.
+                // This transforms "2026-04-08 00:00:00" into "2026-04-08 23:59:59.999"
+                var inclusiveEndDate = endDate.Value.Date.AddDays(1).AddTicks(-1);
+
+                query = query.Where(o => o.tbim_InvDate <= inclusiveEndDate);
+            }
+
+            if (invoiceId.HasValue) 
+            {
+                query = query.Where(o => o.Id == (long)invoiceId);
+            }
+
+            if (!string.IsNullOrWhiteSpace(customerName))
+            {
+                query = query.Where(o => o.tbim_Name.Contains(customerName));
+            }
+
+            if (!string.IsNullOrWhiteSpace(phoneNo))
+            {
+                // Trim removes accidental spaces from frontend typing (e.g., " 0171... ")
+                var cleanPhone = phoneNo.Trim();
+
+                query = query.Where(o => o.tbim_Phone.Contains(cleanPhone));
+            }
+
+            if (!string.IsNullOrWhiteSpace(paymentSlot))
+            {
+                query = query.Where(o => o.tbim_PayInfo==paymentSlot);
+            }
+
+
             // 1. Fetch only the paginated slice of Master Invoices first (Eager load lookups)
-            var invoiceMasters = await _context.InvoiceMasters
+            var invoiceMasters = await query
                 .Include(m => m.InvoiceDetails)
                 .Include(m => m.InvoicePayments)
                     .ThenInclude(m => m.tbip_Payment)
