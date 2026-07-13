@@ -48,4 +48,5 @@ public partial class LayawayMaster
     public virtual LocationDetails? tbim_Location { get; set; }
     public virtual ICollection<LayawayDetails> LayawayDetails { get; set; } = new List<LayawayDetails>();
     public virtual ICollection<LayawayPayments> LayawayPayments { get; set; } = new List<LayawayPayments>();
+    public virtual ICollection<LayawayRefundMaster> LayawayRefundMasters { get; set; } = new List<LayawayRefundMaster>();
 }

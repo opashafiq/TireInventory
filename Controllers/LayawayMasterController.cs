@@ -23,27 +23,90 @@ namespace TireInventory.Controllers
 
         // GET: api/LayawayMaster
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<CreateLayawayDto>>> GetLayawayMasters([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        public async Task<ActionResult<IEnumerable<PagedLayawayResponseDto>>> GetLayawayMasters(
+            [FromQuery] int pageNumber = 1, 
+            [FromQuery] int pageSize = 10,
+            [FromQuery] long? invoiceId = null,
+            [FromQuery] string? customerName = null,
+            [FromQuery] string? phoneNo = null,
+            [FromQuery] string? paymentSlot = null,
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null)
         {
             if (pageSize > 100) pageSize = 100;
             if (pageNumber < 1) pageNumber = 1;
 
-            var masters = await _context.LayawayMasters
+            // Start with a base, un-executed query
+            var query = _context.LayawayMasters.AsNoTracking();
+
+            // --- Dynamic Filtering Blocks ---
+            if (startDate.HasValue)
+            {
+                query = query.Where(o => o.tbim_InvDate >= startDate.Value.Date);
+            }
+
+            if (endDate.HasValue)
+            {
+                var inclusiveEndDate = endDate.Value.Date.AddDays(1).AddTicks(-1);
+                query = query.Where(o => o.tbim_InvDate <= inclusiveEndDate);
+            }
+
+            if (invoiceId.HasValue)
+            {
+                query = query.Where(o => o.Id == invoiceId.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(customerName))
+            {
+                query = query.Where(o => o.tbim_Name.Contains(customerName.Trim()));
+            }
+
+            if (!string.IsNullOrWhiteSpace(phoneNo))
+            {
+                var cleanPhone = phoneNo.Trim();
+                query = query.Where(o => o.tbim_Phone.Contains(cleanPhone));
+            }
+
+            if (!string.IsNullOrWhiteSpace(paymentSlot))
+            {
+                query = query.Where(o => o.tbim_PayInfo == paymentSlot.Trim());
+            }
+
+            // --- CRUCIAL FIX: Calculate total count based on the FILTERED query parameters ---
+            int totalRecords = await query.CountAsync();
+            int totalPages = (int)Math.Ceiling((double)totalRecords / pageSize);
+
+            // 1. Fetch only the paginated slice of Master Invoices
+            var layawayMasters = await query
+                .Include(m => m.LayawayDetails)
+                .Include(m => m.LayawayPayments)
+                    .ThenInclude(p => p.tbip_Payment)
+                .Include(m => m.LayawayRefundMasters)
+                .Include(m => m.tbim_Tax)
+                .Include(m => m.tbim_Location)
                 .OrderByDescending(m => m.tbim_InvDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
 
+            // 2. Map each master record in memory using your instance mapping functions
             var dtos = new List<CreateLayawayDto>();
-            foreach (var lm in masters)
+            foreach (var im in layawayMasters)
             {
-                dtos.Add(MapToCreateLayawayDto(lm));
+                var dto = MapToCreateLayawayDto(im);
+                dtos.Add(dto);
             }
 
-            int totalRecords = await _context.LayawayMasters.CountAsync();
-            Response.Headers.Add("X-Total-Count", totalRecords.ToString());
+            // 3. Build and return the structured response object directly matching your layout
+            var response = new PagedLayawayResponseDto
+            {
+                Items = dtos,
+                TotalCount = totalRecords,
+                PageNumber = pageNumber,
+                TotalPages = totalPages
+            };
 
-            return Ok(dtos);
+            return Ok(response);
         }
 
         // GET: api/LayawayMaster/5
@@ -51,6 +114,12 @@ namespace TireInventory.Controllers
         public async Task<ActionResult<CreateLayawayDto>> GetLayawayMaster(long id)
         {
             var layawayMaster = await _context.LayawayMasters
+                .Include(m => m.LayawayDetails)
+                .Include(m => m.LayawayPayments)
+                    .ThenInclude(p => p.tbip_Payment)
+                .Include(m => m.LayawayRefundMasters)
+                .Include(m => m.tbim_Tax)
+                .Include(m => m.tbim_Location)
                 .Where(m => m.Id == id)
                 .FirstOrDefaultAsync();
 
@@ -70,6 +139,8 @@ namespace TireInventory.Controllers
                 var layawayMaster = await _context.LayawayMasters
                     .Include(m => m.LayawayDetails)
                     .Include(m => m.LayawayPayments)
+                    .Include(m=>m.tbim_Tax)
+                    .Include(m=>m.tbim_Location)
                     .FirstOrDefaultAsync(m => m.Id == id);
 
                 if (layawayMaster == null) return NotFound();
@@ -100,6 +171,7 @@ namespace TireInventory.Controllers
             if (createLayawayDto == null) return BadRequest();
 
             var layawayMaster = MapToLayawayMaster(createLayawayDto.LayawayMasterDto ?? new LayawayMasterDto());
+            layawayMaster.tbim_InvoiceIdRad = GenerateTransactionID();
 
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
@@ -252,8 +324,13 @@ namespace TireInventory.Controllers
                 tbim_IDNo = lm.tbim_IDNo,
                 tbim_RefundType = lm.tbim_RefundType,
                 tbim_LocationId = lm.tbim_LocationId,
+                RefundAmount = lm.LayawayRefundMasters != null & lm.LayawayRefundMasters.Count > 0 ? lm.LayawayRefundMasters.FirstOrDefault().tbirm_RefundAmt : (decimal)0.00,
                 LocationName = lm.tbim_Location != null ? lm.tbim_Location.tbld_LocationName : string.Empty,
-                TaxCompanyName = lm.tbim_Tax != null ? lm.tbim_Tax.tbti_ComName : string.Empty
+                TaxCompanyName = lm.tbim_Tax != null ? lm.tbim_Tax.tbti_ComName : string.Empty,
+                TaxIdentificationNumber = lm.tbim_Tax != null ? lm.tbim_Tax.tbti_TaxNumber : string.Empty,
+                TaxAddress = lm.tbim_Tax != null ? lm.tbim_Tax.tbti_Address : string.Empty,
+                TaxPhone = lm.tbim_Tax != null ? lm.tbim_Tax.tbti_Phone : string.Empty,
+                PaymentMethodName = string.Join(",", lm.LayawayPayments.Select(p => p.tbip_Payment.tbpn_PaymentName).Distinct().ToList()) ?? string.Empty
             };
         }
 
@@ -415,7 +492,7 @@ namespace TireInventory.Controllers
         private void UpdateLayawayMaster(LayawayMaster lm, LayawayMasterDto dto)
         {
             lm.Id = dto.Id;
-            lm.tbim_InvoiceIdRad = dto.tbim_InvoiceIdRad;
+            //lm.tbim_InvoiceIdRad = dto.tbim_InvoiceIdRad;
             lm.tbim_Phone = dto.tbim_Phone;
             lm.tbim_InvDate = dto.tbim_InvDate;
             lm.tbim_Name = dto.tbim_Name;
@@ -562,6 +639,18 @@ namespace TireInventory.Controllers
                     }
                 }
             }
+        }
+
+        private long? GenerateTransactionID()
+        {
+            // 1. Get current time as HHmmss
+            string timePart = DateTime.Now.ToString("HHmmss");
+
+            // 2. Generate random number up to 1,000,000
+            int randomPart = Random.Shared.Next(0, 1000000);
+
+            // 3. Combine them
+            return (long?)Convert.ToInt64($"{timePart}{randomPart}");
         }
     }
 }

@@ -58,6 +58,7 @@ public partial class LayawayRefundMaster
     public string? Layaway_tbim_IDNo { get; set; }
     // Foreign key relationships
     public virtual TaxId? Layaway_tbim_Tax { get; set; }
+    public virtual LayawayMaster? Layaway_tbim_Invoice { get; set; }
     public virtual ICollection<LayawayRefundDetails> LayawayRefundDetails { get; set; } = new List<LayawayRefundDetails>();
     public virtual ICollection<LayawayRefundPayments> LayawayRefundPayments { get; set; } = new List<LayawayRefundPayments>();
 }

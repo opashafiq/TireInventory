@@ -31,15 +31,15 @@ namespace TireInventory.Controllers
 
         // GET: api/InvoiceMaster
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<CreateInvoiceDto>>> GetInvoiceMasters(
-            [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10,
-            [FromQuery] long? invoiceId=null,
-            [FromQuery] string? customerName=null,
-            [FromQuery] string? phoneNo=null,
-            [FromQuery] string? paymentSlot=null,
-            [FromQuery] DateTime? startDate=null,
-            [FromQuery] DateTime? endDate=null
-            )
+        public async Task<ActionResult<PagedInvoiceResponseDto>> GetInvoiceMasters(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] long? invoiceId = null,
+            [FromQuery] string? customerName = null,
+            [FromQuery] string? phoneNo = null,
+            [FromQuery] string? paymentSlot = null,
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null)
         {
             // Fail-safe check to prevent massive memory overloads
             if (pageSize > 100) pageSize = 100;
@@ -48,55 +48,52 @@ namespace TireInventory.Controllers
             // Start with a base, un-executed query
             var query = _context.InvoiceMasters.AsNoTracking();
 
-            // Dynamically apply date filtering if parameters exist
+            // --- Dynamic Filtering Blocks ---
             if (startDate.HasValue)
             {
-                // Evaluates to: >= 2026-04-08 00:00:00
                 query = query.Where(o => o.tbim_InvDate >= startDate.Value.Date);
             }
 
             if (endDate.HasValue)
             {
-                // Crucial: Advance the day by 1 and subtract 1 tick.
-                // This transforms "2026-04-08 00:00:00" into "2026-04-08 23:59:59.999"
                 var inclusiveEndDate = endDate.Value.Date.AddDays(1).AddTicks(-1);
-
                 query = query.Where(o => o.tbim_InvDate <= inclusiveEndDate);
             }
 
-            if (invoiceId.HasValue) 
+            if (invoiceId.HasValue)
             {
-                query = query.Where(o => o.Id == (long)invoiceId);
+                query = query.Where(o => o.Id == invoiceId.Value);
             }
 
             if (!string.IsNullOrWhiteSpace(customerName))
             {
-                query = query.Where(o => o.tbim_Name.Contains(customerName));
+                query = query.Where(o => o.tbim_Name.Contains(customerName.Trim()));
             }
 
             if (!string.IsNullOrWhiteSpace(phoneNo))
             {
-                // Trim removes accidental spaces from frontend typing (e.g., " 0171... ")
                 var cleanPhone = phoneNo.Trim();
-
                 query = query.Where(o => o.tbim_Phone.Contains(cleanPhone));
             }
 
             if (!string.IsNullOrWhiteSpace(paymentSlot))
             {
-                query = query.Where(o => o.tbim_PayInfo==paymentSlot);
+                query = query.Where(o => o.tbim_PayInfo == paymentSlot.Trim());
             }
 
+            // --- CRUCIAL FIX: Calculate total count based on the FILTERED query parameters ---
+            int totalRecords = await query.CountAsync();
+            int totalPages = (int)Math.Ceiling((double)totalRecords / pageSize);
 
-            // 1. Fetch only the paginated slice of Master Invoices first (Eager load lookups)
+            // 1. Fetch only the paginated slice of Master Invoices
             var invoiceMasters = await query
                 .Include(m => m.InvoiceDetails)
                 .Include(m => m.InvoicePayments)
-                    .ThenInclude(m => m.tbip_Payment)
+                    .ThenInclude(p => p.tbip_Payment)
                 .Include(m => m.InvoiceRefundMasters)
                 .Include(m => m.tbim_Tax)
                 .Include(m => m.tbim_LocationDetails)
-                .OrderByDescending(m => m.tbim_InvDate) // Show newest invoices first
+                .OrderByDescending(m => m.tbim_InvDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
@@ -106,18 +103,19 @@ namespace TireInventory.Controllers
             foreach (var im in invoiceMasters)
             {
                 var dto = MapToCreateInvoiceDto(im);
-                //TestMapping(im); // Optional: for debugging or logging purposes
                 dtos.Add(dto);
             }
 
-            // 3. Add pagination metadata headers so your Next.js SWR configuration knows total pages
-            int totalRecords = await _context.InvoiceMasters.CountAsync();
-            Response.Headers.Add("X-Total-Count", totalRecords.ToString());
+            // 3. Build and return the structured response object directly matching your layout
+            var response = new PagedInvoiceResponseDto
+            {
+                Items = dtos,
+                TotalCount = totalRecords,
+                PageNumber = pageNumber,
+                TotalPages = totalPages
+            };
 
-
-            
-
-            return Ok(dtos);
+            return Ok(response);
         }
 
         // GET: api/InvoiceMaster/5
@@ -178,7 +176,6 @@ namespace TireInventory.Controllers
                 .Include(m => m.InvoicePayments)
                 .Include(m => m.tbim_Tax)
                 .Include(m => m.tbim_LocationDetails)
-                .Include(m => m.InvoicePayments)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
                 // Update invoiceMaster
@@ -345,24 +342,6 @@ namespace TireInventory.Controllers
             };
         }
 
-        private void TestMapping(InvoiceMaster invoiceMaster)
-        {
-           var testDto=_context.InvoicePayments.Where(p => p.tbip_InvoiceId == invoiceMaster.Id)
-                .Select(p => new InvoicePaymentsDto
-                {
-                    Id = p.Id,
-                    tbip_InvoiceId = p.tbip_InvoiceId,
-                    tbip_PaymentId = p.tbip_PaymentId,
-                    tbip_PayAmt = p.tbip_PayAmt,
-                    tbip_Date = p.tbip_Date,
-                    tbip_PaymentType = p.tbip_PaymentType,
-                    tbip_LayawayId = p.tbip_LayawayId,
-                    tdip_fromlayaway = p.tdip_fromlayaway,
-                    tbip_LayawayDate = p.tbip_LayawayDate
-                })
-                .ToList();  
-
-        }
         private InvoiceMasterDto MapToInvoiceMasterDto(InvoiceMaster invoiceMaster)
         {
             return new InvoiceMasterDto
