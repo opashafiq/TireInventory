@@ -106,6 +106,49 @@ namespace TireInventory.Controllers
             if (dto == null) return NotFound();
             return Ok(dto);
         }
+        
+        
+        // GET: api/ItemMaster/getbycategory/5
+        [HttpGet("getbycategory/{id}")]
+        public async Task<ActionResult<IEnumerable<ItemMasterDto>>> GetByCategory(long id)
+        {
+            var list = await (from im in _context.ItemMasters
+                              join dep in _context.Departments
+                                  on im.tbim_ItemCategoryId equals dep.Id
+                              join dis in _context.Distributors
+                                    on im.tbim_DistributorId equals dis.Id
+                              join loc in _context.LocationDetails
+                                    on im.tbim_LocationId equals loc.Id
+                              where im.tbim_ItemCategoryId==id
+                              select new ItemMasterDto
+                              {
+                                  Id = im.Id,
+                                  tbim_ItemCategoryId = im.tbim_ItemCategoryId,
+                                  tbim_Size = im.tbim_Size,
+                                  tbim_Brand = im.tbim_Brand,
+                                  tbim_Series = im.tbim_Series,
+                                  tbim_Bolt = im.tbim_Bolt,
+                                  tbim_HoleS = im.tbim_HoleS,
+                                  tbim_Zone = im.tbim_Zone,
+                                  tbim_Qty = im.tbim_Qty,
+                                  tbim_QtyOp = im.tbim_QtyOp,
+                                  tbim_Code = im.tbim_Code,
+                                  tbim_CodeTOT = im.tbim_CodeTOT,
+                                  tbim_DistributorId = im.tbim_DistributorId,
+                                  tbim_OURP = im.tbim_OURP,
+                                  tbim_LocationId = im.tbim_LocationId,
+                                  DepartmentName = dep.Tbid_DepartmentName,
+                                  DistributorName = dis.Name,
+                                  LocationName = loc.tbld_LocationName,
+                                  tbim_ThrashDate = im.tbim_ThrashDate,
+                                  UserName = im.UserName,
+                                  SetDate = im.SetDate
+
+                              })
+                            .ToListAsync();
+
+            return Ok(list);
+        }
 
 
         // PUT: api/ItemMaster/5
