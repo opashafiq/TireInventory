@@ -7,6 +7,7 @@ namespace TireInventory.Models;
 public partial class TaxRateModified
 {
     public long Id { get; set; }
+    public decimal tbtm_TaxRate { get; set; }
 
     public string tbtm_Note { get; set; } = null!;
 

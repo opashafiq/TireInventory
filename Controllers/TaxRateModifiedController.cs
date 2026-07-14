@@ -7,7 +7,7 @@ using TireInventory.Models;
 
 namespace TireInventory.Controllers
 {
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [Route("api/[controller]")]
     [ApiController]
     public class TaxRateModifiedController : ControllerBase
@@ -21,9 +21,9 @@ namespace TireInventory.Controllers
 
         // GET: api/TaxRateModified
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<TaxRateModified>>> GetTaxRateModified()
+        public async Task<ActionResult<TaxRateModified>> GetTaxRateModified()
         {
-            return await _context.TaxRateModifieds.ToListAsync();
+            return await _context.TaxRateModifieds.FirstOrDefaultAsync();
         }
 
         // GET: api/TaxRateModified/5
