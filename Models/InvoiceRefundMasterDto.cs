@@ -25,5 +25,7 @@ namespace TireInventory.Models
         // Resolved original invoice information
         public string OriginalInvoiceName { get; set; } = string.Empty;
         public DateTime? OriginalInvoiceDate { get; set; }
+        public long? tbim_InvoiceIdRad { get; set; }
+        public string tbim_Phone { get; set; } = null!;
     }
 }

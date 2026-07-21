@@ -23,12 +23,44 @@ namespace TireInventory.Controllers
 
         // GET: api/LayawayRefundMaster
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<CreateLayawayRefundDto>>> GetLayawayRefundMasters([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        public async Task<ActionResult<PagedLayawayRefundResponseDto>> GetLayawayRefundMasters(
+            [FromQuery] int pageNumber = 1, 
+            [FromQuery] int pageSize = 10,
+            [FromQuery] long? invoiceId = null,
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null
+            )
         {
             if (pageSize > 100) pageSize = 100;
             if (pageNumber < 1) pageNumber = 1;
 
-            var masters = await _context.LayawayRefundMasters
+            // Start with a base, un-executed query
+            var query = _context.LayawayRefundMasters.AsNoTracking();
+
+            // --- Dynamic Filtering Blocks ---
+            if (startDate.HasValue)
+            {
+                query = query.Where(o => o.Layaway_tbim_InvDate >= startDate.Value.Date);
+            }
+
+            if (endDate.HasValue)
+            {
+                var inclusiveEndDate = endDate.Value.Date.AddDays(1).AddTicks(-1);
+                query = query.Where(o => o.Layaway_tbim_InvDate <= inclusiveEndDate);
+            }
+
+            if (invoiceId.HasValue)
+            {
+                query = query.Where(o => o.Id == invoiceId.Value);
+            }
+
+            // --- CRUCIAL FIX: Calculate total count based on the FILTERED query parameters ---
+            int totalRecords = await query.CountAsync();
+            int totalPages = (int)Math.Ceiling((double)totalRecords / pageSize);
+
+            var masters = await query
+                .Include(m => m.LayawayRefundDetails)
+                .Include(m => m.LayawayRefundPayments)
                 .OrderByDescending(m => m.tbirm_LayawayRefundDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
@@ -40,10 +72,16 @@ namespace TireInventory.Controllers
                 dtos.Add(MapToCreateLayawayRefundDto(m));
             }
 
-            int totalRecords = await _context.LayawayRefundMasters.CountAsync();
-            Response.Headers.Add("X-Total-Count", totalRecords.ToString());
+            // 3. Build and return the structured response object directly matching your layout
+            var response = new PagedLayawayRefundResponseDto
+            {
+                Items = dtos,
+                TotalCount = totalRecords,
+                PageNumber = pageNumber,
+                TotalPages = totalPages
+            };
 
-            return Ok(dtos);
+            return Ok(response);
         }
 
         // GET: api/LayawayRefundMaster/5

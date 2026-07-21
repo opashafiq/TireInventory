@@ -62,7 +62,7 @@ namespace TireInventory.Controllers
 
             if (invoiceId.HasValue)
             {
-                query = query.Where(o => o.Id == invoiceId.Value);
+                query = query.Where(o => o.tbim_InvoiceIdRad == invoiceId.Value);
             }
 
             if (!string.IsNullOrWhiteSpace(customerName))

@@ -23,12 +23,64 @@ namespace TireInventory.Controllers
 
         // GET: api/InvoiceRefundMaster
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<CreateInvoiceRefundDto>>> GetInvoiceRefundMasters([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        public async Task<ActionResult<PagedInvoiceRefundResponseDto>> GetInvoiceRefundMasters(
+            [FromQuery] int pageNumber = 1, 
+            [FromQuery] int pageSize = 10,
+            [FromQuery] long? refundTransactionId = null,
+            [FromQuery] long? invoiceTransactionId = null,
+            [FromQuery] string? customerName = null,
+            [FromQuery] string? phoneNo = null,
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null
+            )
         {
             if (pageSize > 100) pageSize = 100;
             if (pageNumber < 1) pageNumber = 1;
 
-            var masters = await _context.InvoiceRefundMasters
+            // Start with a base, un-executed query
+            var query = _context.InvoiceRefundMasters.AsNoTracking();
+
+            // --- Dynamic Filtering Blocks ---
+            if (startDate.HasValue)
+            {
+                query = query.Where(o => o.tbirm_InvRefundDate >= startDate.Value.Date);
+            }
+
+            if (endDate.HasValue)
+            {
+                var inclusiveEndDate = endDate.Value.Date.AddDays(1).AddTicks(-1);
+                query = query.Where(o => o.tbirm_InvRefundDate <= inclusiveEndDate);
+            }
+
+            if (refundTransactionId.HasValue)
+            {
+                query = query.Where(o => o.tbirm_InvoiceRefundIdRad == refundTransactionId.Value);
+            }
+
+            if (invoiceTransactionId.HasValue)
+            {
+                query = query.Where(o => o.tbirm_InvoiceRefundIdRad == invoiceTransactionId.Value);
+            }
+
+            //if (!string.IsNullOrWhiteSpace(customerName))
+            //{
+            //    query = query.Where(o => o.OriginalInvoiceName.Contains(customerName.Trim()));
+            //}
+
+            //if (!string.IsNullOrWhiteSpace(phoneNo))
+            //{
+            //    var cleanPhone = phoneNo.Trim();
+            //    query = query.Where(o => o.tbim_Phone.Contains(cleanPhone));
+            //}
+
+            // --- CRUCIAL FIX: Calculate total count based on the FILTERED query parameters ---
+            int totalRecords = await query.CountAsync();
+            int totalPages = (int)Math.Ceiling((double)totalRecords / pageSize);
+
+
+            var masters = await query
+                .Include(m=>m.InvoiceRefundDetails)
+                .Include(m=>m.InvoiceRefundPayments)
                 .OrderByDescending(m => m.tbirm_InvRefundDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
@@ -40,10 +92,17 @@ namespace TireInventory.Controllers
                 dtos.Add(MapToCreateInvoiceRefundDto(m));
             }
 
-            int totalRecords = await _context.InvoiceRefundMasters.CountAsync();
-            Response.Headers.Add("X-Total-Count", totalRecords.ToString());
+            // 3. Build and return the structured response object directly matching your layout
+            var response = new PagedInvoiceRefundResponseDto
+            {
+                Items = dtos,
+                TotalCount = totalRecords,
+                PageNumber = pageNumber,
+                TotalPages = totalPages
+            };
 
-            return Ok(dtos);
+            return Ok(response);
+
         }
 
         // GET: api/InvoiceRefundMaster/5
@@ -52,6 +111,8 @@ namespace TireInventory.Controllers
         {
             var refundMaster = await _context.InvoiceRefundMasters
                 .Where(m => m.Id == id)
+                .Include(m => m.InvoiceRefundDetails)
+                .Include(m => m.InvoiceRefundPayments)
                 .FirstOrDefaultAsync();
 
             if (refundMaster == null) return NotFound();
@@ -239,6 +300,8 @@ namespace TireInventory.Controllers
                 UserName = im.UserName,
                 SetDate = im.SetDate,
                 OriginalInvoiceName = im.tbirm_Invoice != null ? im.tbirm_Invoice.tbim_Name : string.Empty,
+                tbim_InvoiceIdRad = im.tbirm_Invoice != null ? im.tbirm_Invoice.tbim_InvoiceIdRad : null,
+                tbim_Phone= im.tbirm_Invoice != null ? im.tbirm_Invoice.tbim_Phone : string.Empty,
                 OriginalInvoiceDate = im.tbirm_Invoice != null ? (DateTime?)im.tbirm_Invoice.tbim_InvDate : null
             };
         }
