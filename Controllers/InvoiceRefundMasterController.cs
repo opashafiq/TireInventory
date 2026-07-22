@@ -1,10 +1,11 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using TireInventory.Data;
+using TireInventory.Helpers;
 using TireInventory.Models;
 
 namespace TireInventory.Controllers
@@ -81,6 +82,7 @@ namespace TireInventory.Controllers
             var masters = await query
                 .Include(m=>m.InvoiceRefundDetails)
                 .Include(m=>m.InvoiceRefundPayments)
+                .Include(m=>m.tbirm_Invoice)
                 .OrderByDescending(m => m.tbirm_InvRefundDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
@@ -113,6 +115,7 @@ namespace TireInventory.Controllers
                 .Where(m => m.Id == id)
                 .Include(m => m.InvoiceRefundDetails)
                 .Include(m => m.InvoiceRefundPayments)
+                .Include(m => m.tbirm_Invoice)
                 .FirstOrDefaultAsync();
 
             if (refundMaster == null) return NotFound();
@@ -160,6 +163,7 @@ namespace TireInventory.Controllers
             if (createDto == null) return BadRequest();
 
             var refundMaster = MapToInvoiceRefundMaster(createDto.invoiceRefundMasterDto ?? new InvoiceRefundMasterDto());
+            refundMaster.tbirm_InvoiceRefundIdRad = CommonFunctions.GenerateTransactionID();
 
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
@@ -442,7 +446,7 @@ namespace TireInventory.Controllers
         private void UpdateInvoiceRefundMaster(InvoiceRefundMaster im, InvoiceRefundMasterDto dto)
         {
             im.Id = dto.Id;
-            im.tbirm_InvoiceRefundIdRad = dto.tbirm_InvoiceRefundIdRad;
+            //im.tbirm_InvoiceRefundIdRad = dto.tbirm_InvoiceRefundIdRad;
             im.tbirm_InvRefundDate = dto.tbirm_InvRefundDate;
             im.tbirm_RefundType = dto.tbirm_RefundType;
             im.tbirm_InvoiceId = dto.tbirm_InvoiceId;

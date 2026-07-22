@@ -14,6 +14,7 @@ using TireInventory.Data;
 using TireInventory.Models;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 using static System.Runtime.InteropServices.JavaScript.JSType;
+using TireInventory.Helpers;
 
 namespace TireInventory.Controllers
 {
@@ -210,7 +211,7 @@ namespace TireInventory.Controllers
             if (createInvoiceDto == null) return BadRequest();
 
             var invoiceMaster = MapToInvoiceMaster( createInvoiceDto.invoiceMasterDto ?? new InvoiceMasterDto());
-            invoiceMaster.tbim_InvoiceIdRad = GenerateTransactionID();
+            invoiceMaster.tbim_InvoiceIdRad = CommonFunctions.GenerateTransactionID();
 
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
