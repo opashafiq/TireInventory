@@ -26,7 +26,10 @@ namespace TireInventory.Controllers
         public async Task<ActionResult<PagedLayawayRefundResponseDto>> GetLayawayRefundMasters(
             [FromQuery] int pageNumber = 1, 
             [FromQuery] int pageSize = 10,
-            [FromQuery] long? invoiceId = null,
+            [FromQuery] long? refundTransactionId = null,
+            [FromQuery] long? layawayTransactionId = null,
+            [FromQuery] string? customerName = null,
+            [FromQuery] string? phoneNo = null,
             [FromQuery] DateTime? startDate = null,
             [FromQuery] DateTime? endDate = null
             )
@@ -49,10 +52,26 @@ namespace TireInventory.Controllers
                 query = query.Where(o => o.Layaway_tbim_InvDate <= inclusiveEndDate);
             }
 
-            if (invoiceId.HasValue)
+            if (refundTransactionId.HasValue)
             {
-                query = query.Where(o => o.Id == invoiceId.Value);
+                query = query.Where(o => o.tbirm_LayawayRefundIdRad == refundTransactionId.Value);
             }
+
+            //if (layawayTransactionId.HasValue)
+            //{
+            //    query = query.Where(o => o == invoiceTransactionId.Value);
+            //}
+
+            //if (!string.IsNullOrWhiteSpace(customerName))
+            //{
+            //    query = query.Where(o => o.OriginalInvoiceName.Contains(customerName.Trim()));
+            //}
+
+            //if (!string.IsNullOrWhiteSpace(phoneNo))
+            //{
+            //    var cleanPhone = phoneNo.Trim();
+            //    query = query.Where(o => o.tbim_Phone.Contains(cleanPhone));
+            //}
 
             // --- CRUCIAL FIX: Calculate total count based on the FILTERED query parameters ---
             int totalRecords = await query.CountAsync();
@@ -61,6 +80,7 @@ namespace TireInventory.Controllers
             var masters = await query
                 .Include(m => m.LayawayRefundDetails)
                 .Include(m => m.LayawayRefundPayments)
+                .Include(m => m.Layaway_tbim_Invoice)
                 .OrderByDescending(m => m.tbirm_LayawayRefundDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
@@ -108,6 +128,7 @@ namespace TireInventory.Controllers
                 var refundMaster = await _context.LayawayRefundMasters
                     .Include(m => m.LayawayRefundDetails)
                     .Include(m => m.LayawayRefundPayments)
+                    .Include(m => m.Layaway_tbim_Invoice)
                     .FirstOrDefaultAsync(m => m.Id == id);
 
                 if (refundMaster == null) return NotFound();
@@ -304,7 +325,9 @@ namespace TireInventory.Controllers
                 Layaway_tbim_IDNo = lm.Layaway_tbim_IDNo,
                 // resolved original layaway info
                 OriginalLayawayName = lm.Layaway_tbim_Name ?? string.Empty,
-                OriginalLayawayDate = lm.Layaway_tbim_InvDate
+                OriginalLayawayDate = lm.Layaway_tbim_InvDate,
+                tbim_InvoiceIdRad = lm.Layaway_tbim_Invoice != null ? lm.Layaway_tbim_Invoice.tbim_InvoiceIdRad : null,
+                tbim_Phone = lm.Layaway_tbim_Invoice != null ? lm.Layaway_tbim_Invoice.tbim_Phone : string.Empty,
             };
         }
 

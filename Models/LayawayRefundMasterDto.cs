@@ -56,5 +56,7 @@ namespace TireInventory.Models
         // Resolved original layaway info (if available)
         public string OriginalLayawayName { get; set; } = string.Empty;
         public DateTime? OriginalLayawayDate { get; set; }
+        public long? tbim_InvoiceIdRad { get; set; }
+        public string tbim_Phone { get; set; } = null!;
     }
 }

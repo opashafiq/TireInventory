@@ -58,10 +58,10 @@ namespace TireInventory.Controllers
                 query = query.Where(o => o.tbirm_InvoiceRefundIdRad == refundTransactionId.Value);
             }
 
-            if (invoiceTransactionId.HasValue)
-            {
-                query = query.Where(o => o.tbirm_InvoiceRefundIdRad == invoiceTransactionId.Value);
-            }
+            //if (invoiceTransactionId.HasValue)
+            //{
+            //    query = query.Where(o => o.tbirm_InvoiceRefundIdRad == invoiceTransactionId.Value);
+            //}
 
             //if (!string.IsNullOrWhiteSpace(customerName))
             //{
