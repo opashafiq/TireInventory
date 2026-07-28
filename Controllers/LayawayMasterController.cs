@@ -248,10 +248,11 @@ namespace TireInventory.Controllers
                 await transaction.CommitAsync();
                 return await GetLayawayMaster(layawayMaster.Id);
             }
-            catch (Exception)
+            catch (Exception e)
             {
                 await transaction.RollbackAsync();
-                return StatusCode(500, "Critical database transaction failure while creating the layaway.");
+                return StatusCode(500, e.InnerException.Message.ToString());
+                //return StatusCode(500, "Critical database transaction failure while creating the layaway.");
             }
         }
 

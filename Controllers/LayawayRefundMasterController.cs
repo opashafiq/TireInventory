@@ -1,10 +1,11 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using TireInventory.Data;
+using TireInventory.Helpers;
 using TireInventory.Models;
 
 namespace TireInventory.Controllers
@@ -109,6 +110,9 @@ namespace TireInventory.Controllers
         public async Task<ActionResult<CreateLayawayRefundDto>> GetLayawayRefundMaster(long id)
         {
             var master = await _context.LayawayRefundMasters
+                .Include(m => m.LayawayRefundDetails)
+                .Include(m => m.LayawayRefundPayments)
+                .Include(m => m.Layaway_tbim_Invoice)
                 .Where(m => m.Id == id)
                 .FirstOrDefaultAsync();
 
@@ -157,6 +161,8 @@ namespace TireInventory.Controllers
             if (createDto == null) return BadRequest();
 
             var refundMaster = MapToLayawayRefundMaster(createDto.layawayRefundMasterDto ?? new LayawayRefundMasterDto());
+            refundMaster.tbirm_LayawayRefundIdRad = CommonFunctions.GenerateTransactionID();
+
 
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
@@ -507,7 +513,7 @@ namespace TireInventory.Controllers
         private void UpdateLayawayRefundMaster(LayawayRefundMaster lm, LayawayRefundMasterDto dto)
         {
             lm.Id = dto.Id;
-            lm.tbirm_LayawayRefundIdRad = dto.tbirm_LayawayRefundIdRad;
+            //lm.tbirm_LayawayRefundIdRad = dto.tbirm_LayawayRefundIdRad;
             lm.tbirm_LayawayRefundDate = dto.tbirm_LayawayRefundDate;
             lm.tbirm_RefundType = dto.tbirm_RefundType;
             lm.tbirm_SubTotal = dto.tbirm_SubTotal;
