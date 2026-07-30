@@ -31,7 +31,8 @@ namespace TireInventory.Controllers
             [FromQuery] string? phoneNo = null,
             [FromQuery] string? paymentSlot = null,
             [FromQuery] DateTime? startDate = null,
-            [FromQuery] DateTime? endDate = null)
+            [FromQuery] DateTime? endDate = null,
+            [FromQuery] bool? PendingListOnly = false)
         {
             if (pageSize > 100) pageSize = 100;
             if (pageNumber < 1) pageNumber = 1;
@@ -70,6 +71,11 @@ namespace TireInventory.Controllers
             if (!string.IsNullOrWhiteSpace(paymentSlot))
             {
                 query = query.Where(o => o.tbim_PayInfo == paymentSlot.Trim());
+            }
+
+            if (PendingListOnly.HasValue && PendingListOnly.Value)
+            {
+                query = query.Where(o => o.tbim_Total > o.tbim_PaidAmt);
             }
 
             // --- CRUCIAL FIX: Calculate total count based on the FILTERED query parameters ---
@@ -255,6 +261,39 @@ namespace TireInventory.Controllers
                 //return StatusCode(500, "Critical database transaction failure while creating the layaway.");
             }
         }
+
+        // POST: api/LayawayMaster/SavePayments
+        [HttpPost("SavePayments")]
+        public async Task<IActionResult> SavePayments(List<LayawayPaymentsDto> layawayPaymentsDto)
+        {
+            if (layawayPaymentsDto == null) return BadRequest();
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+
+            try
+            {
+                var layawayMaster = await _context.LayawayMasters
+                    .FirstOrDefaultAsync(m => m.Id == layawayPaymentsDto.FirstOrDefault().tbip_InvoiceId);
+                layawayMaster.tbim_PaidAmt = layawayMaster.tbim_PaidAmt + layawayPaymentsDto.Sum(p => p.tbip_PayAmt) ?? 0;
+                _context.Entry(layawayMaster).State = EntityState.Modified;
+
+                // 3. Process Payments update
+                ProcessLayawayPaymentsInsert(layawayPaymentsDto);
+
+                // Save everything atomically
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return Ok(new { Message = "Payment adjusted successfully", InvoiceId = layawayPaymentsDto.FirstOrDefault().tbip_InvoiceId });
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                // Log the exception here (e.g., _logger.LogError(ex, "Error updating invoice..."))
+                //return StatusCode(500, "An error occurred while updating the invoice tracking entities.");
+                return StatusCode(500, ex.InnerException.Message.ToString());
+            }
+        }
+
 
         // DELETE: api/LayawayMaster/5
         [HttpDelete("{id}")]
@@ -639,6 +678,24 @@ namespace TireInventory.Controllers
                         existingPayment.tbip_PaymentType = payDto.tbip_PaymentType;
                     }
                 }
+            }
+        }
+
+        private void ProcessLayawayPaymentsInsert(List<LayawayPaymentsDto> incomingPayments)
+        {
+            // Purge removed payments
+
+            // Insert payments
+            foreach (var payDto in incomingPayments)
+            {
+                _context.InvoicePayments.Add(new InvoicePayments
+                {
+                    tbip_InvoiceId = payDto.tbip_InvoiceId,
+                    tbip_PaymentId = payDto.tbip_PaymentId,
+                    tbip_PayAmt = payDto.tbip_PayAmt,
+                    tbip_Date = DateTime.UtcNow,
+                    tbip_PaymentType = payDto.tbip_PaymentType
+                });
             }
         }
 

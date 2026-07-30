@@ -40,7 +40,8 @@ namespace TireInventory.Controllers
             [FromQuery] string? phoneNo = null,
             [FromQuery] string? paymentSlot = null,
             [FromQuery] DateTime? startDate = null,
-            [FromQuery] DateTime? endDate = null)
+            [FromQuery] DateTime? endDate = null,
+            [FromQuery] bool? PendingListOnly = false)
         {
             // Fail-safe check to prevent massive memory overloads
             if (pageSize > 100) pageSize = 100;
@@ -82,22 +83,28 @@ namespace TireInventory.Controllers
                 query = query.Where(o => o.tbim_PayInfo == paymentSlot.Trim());
             }
 
+            if (PendingListOnly.HasValue && PendingListOnly.Value)
+            {
+                query = query.Where(o => o.tbim_Total > o.tbim_PaidAmt);
+            }
+
             // --- CRUCIAL FIX: Calculate total count based on the FILTERED query parameters ---
             int totalRecords = await query.CountAsync();
             int totalPages = (int)Math.Ceiling((double)totalRecords / pageSize);
 
-            // 1. Fetch only the paginated slice of Master Invoices
             var invoiceMasters = await query
-                .Include(m => m.InvoiceDetails)
-                .Include(m => m.InvoicePayments)
-                    .ThenInclude(p => p.tbip_Payment)
-                .Include(m => m.InvoiceRefundMasters)
-                .Include(m => m.tbim_Tax)
-                .Include(m => m.tbim_LocationDetails)
-                .OrderByDescending(m => m.tbim_InvDate)
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
+            .Include(m => m.InvoiceDetails)
+            .Include(m => m.InvoicePayments)
+                .ThenInclude(p => p.tbip_Payment)
+            .Include(m => m.InvoiceRefundMasters)
+            .Include(m => m.tbim_Tax)
+            .Include(m => m.tbim_LocationDetails)
+            .OrderByDescending(m => m.tbim_InvDate)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+
 
             // 2. Map each master record in memory using your instance mapping functions
             var dtos = new List<CreateInvoiceDto>();
@@ -325,6 +332,39 @@ namespace TireInventory.Controllers
             await _context.SaveChangesAsync();
 
             return NoContent();
+        }
+
+
+        // POST: api/InvoiceMaster/SavePayments
+        [HttpPost("SavePayments")]
+        public async Task<IActionResult> SavePayments(List<InvoicePaymentsDto> invoicePaymentsDto)
+        {
+            if (invoicePaymentsDto == null) return BadRequest();
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+
+            try
+            {
+                var invoiceMaster= await _context.InvoiceMasters
+                    .FirstOrDefaultAsync(m => m.Id == invoicePaymentsDto.FirstOrDefault().tbip_InvoiceId);
+                invoiceMaster.tbim_PaidAmt = invoiceMaster.tbim_PaidAmt + invoicePaymentsDto.Sum(p => p.tbip_PayAmt) ?? 0;
+                _context.Entry(invoiceMaster).State = EntityState.Modified;
+
+                // 3. Process Payments update
+                ProcessInvoicePaymentsInsert(invoicePaymentsDto);
+
+                // Save everything atomically
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return Ok(new { Message = "Payment adjusted successfully", InvoiceId = invoicePaymentsDto.FirstOrDefault().tbip_InvoiceId });
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                // Log the exception here (e.g., _logger.LogError(ex, "Error updating invoice..."))
+                //return StatusCode(500, "An error occurred while updating the invoice tracking entities.");
+                return StatusCode(500, ex.InnerException.Message.ToString());
+            }
         }
 
         private bool InvoiceMasterExists(long id)
@@ -755,6 +795,29 @@ namespace TireInventory.Controllers
                         existingPayment.tbip_LayawayDate = payDto.tbip_LayawayDate;
                     }
                 }
+            }
+        }
+
+
+
+        private void ProcessInvoicePaymentsInsert( List<InvoicePaymentsDto> incomingPayments)
+        {
+            // Purge removed payments
+
+            // Insert payments
+            foreach (var payDto in incomingPayments)
+            {
+                _context.InvoicePayments.Add(new InvoicePayments
+                {
+                    tbip_InvoiceId = payDto.tbip_InvoiceId,
+                    tbip_PaymentId = payDto.tbip_PaymentId,
+                    tbip_PayAmt = payDto.tbip_PayAmt,
+                    tbip_Date = DateTime.UtcNow,
+                    tbip_PaymentType = payDto.tbip_PaymentType,
+                    tbip_LayawayId = payDto.tbip_LayawayId,
+                    tdip_fromlayaway = payDto.tdip_fromlayaway,
+                    tbip_LayawayDate = payDto.tbip_LayawayDate
+                });
             }
         }
 

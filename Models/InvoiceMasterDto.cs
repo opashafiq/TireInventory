@@ -47,6 +47,8 @@ namespace TireInventory.Models
         // Retre
         // Retreive the list of InvoicePayments when there is value in tbim_LaywayNo
         public List<InvoicePaymentsDto>? LayawayRefund { get; set; } = new List<InvoicePaymentsDto>();
+        // Calculatated field
+        public decimal? PendingAmount => tbim_Total - tbim_PaidAmt;
         // Resolved FK names
         public decimal? RefundAmount { get; set; }
         public string LocationName { get; set; } = string.Empty;

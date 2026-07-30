@@ -39,7 +39,8 @@ namespace TireInventory.Models
         public string? tbim_IDNo { get; set; }
         public string? tbim_RefundType { get; set; }
         public long? tbim_LocationId { get; set; }
-
+        // Calculatated field
+        public decimal? PendingAmount => tbim_Total - tbim_PaidAmt;
         // resolved names
         public decimal? RefundAmount { get; set; }
         public string LocationName { get; set; } = string.Empty;
