@@ -367,6 +367,50 @@ namespace TireInventory.Controllers
             }
         }
 
+        // POST: api/InvoiceMaster/HideShowToUsers/
+        [HttpPost("HideShowToUsers")]
+        public async Task<IActionResult> HideShowToUsers(
+            [FromQuery] long invoiceid ,
+            [FromQuery] string showhideflag)
+        {
+            string message = string.Empty;
+            try
+            {
+                var invoiceMaster = await _context.InvoiceMasters
+                    .FirstOrDefaultAsync(m => m.Id == invoiceid);
+                if (invoiceMaster == null)
+                {
+                    return BadRequest("Invoice Not Found");
+                }
+
+                if (showhideflag == "D")
+                {
+                    message = "Invoice Made unavailable to users";
+                }
+                else if (showhideflag == "A")
+                {
+                    message = "Invoice Made accessible to users";
+                }
+                else
+                {
+                    return BadRequest("Invalid show/hide flag. Use 'D' or 'A'.");
+                }
+
+                invoiceMaster.tbim_Delinfo = showhideflag;
+                _context.Entry(invoiceMaster).State = EntityState.Modified;
+                _context.SaveChanges();
+                return Ok(new { Message = message, InvoiceId = invoiceid });
+            }
+            catch (Exception ex)
+            {
+                // Log the exception here (e.g., _logger.LogError(ex, "Error updating invoice..."))
+                //return StatusCode(500, "An error occurred while updating the invoice tracking entities.");
+                return StatusCode(500, ex.InnerException.Message.ToString());
+            }
+
+            
+        }
+
         private bool InvoiceMasterExists(long id)
         {
             return _context.InvoiceMasters.Any(e => e.Id == id);
@@ -821,17 +865,7 @@ namespace TireInventory.Controllers
             }
         }
 
-        private long? GenerateTransactionID()
-        {
-            // 1. Get current time as HHmmss
-            string timePart = DateTime.Now.ToString("HHmmss");
-
-            // 2. Generate random number up to 1,000,000
-            int randomPart = Random.Shared.Next(0, 1000000);
-
-            // 3. Combine them
-            return (long?)Convert.ToInt64( $"{timePart}{randomPart}");
-        }
+        
 
     }
 }

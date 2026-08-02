@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TireInventory.Data;
 using TireInventory.Models;
+using static TireInventory.Helpers.CommonFunctions;
 
 namespace TireInventory.Controllers
 {
@@ -206,6 +207,138 @@ namespace TireInventory.Controllers
             await _context.SaveChangesAsync();
 
             return NoContent();
+        }
+
+
+        // POST: api/ItemMaster/bulk-import
+        [HttpPost("bulk-import")]
+        public async Task<IActionResult> BulkImportItems(
+                [FromBody] List<ItemMaster> items,
+                [FromQuery] bool skipErrors = false)
+        {
+            if (items == null || !items.Any())
+            {
+                return BadRequest(new { message = "No item data provided." });
+            }
+
+            var result = new BulkImportResultDto();
+            ItemMaster existingItem = new ItemMaster();
+            var itemsToInsert = new List<ItemMaster>();
+            var itemsToUpdate = new List<ItemMaster>();
+            int itemCount = 0;
+
+            // 1. Process and validate incoming rows
+            for (int i = 0; i < items.Count; i++)
+            {
+                var dto = items[i];
+                int rowNumber = i + 1;
+                //itemCount = _context.ItemMasters.Count(im => 
+                //im.tbim_ItemCategoryId == dto.tbim_ItemCategoryId &&
+                //im.tbim_Size == dto.tbim_Size &&
+                //im.tbim_Brand == dto.tbim_Brand &&
+                //im.tbim_Series == dto.tbim_Series &&
+                //im.tbim_Bolt == dto.tbim_Bolt &&
+                //im.tbim_HoleS == dto.tbim_HoleS 
+                //);
+
+                existingItem=_context.ItemMasters.Where(im =>
+                im.tbim_ItemCategoryId == dto.tbim_ItemCategoryId &&
+                im.tbim_Size == dto.tbim_Size &&
+                im.tbim_Brand == dto.tbim_Brand &&
+                im.tbim_Series == dto.tbim_Series &&
+                im.tbim_Bolt == dto.tbim_Bolt &&
+                im.tbim_HoleS == dto.tbim_HoleS 
+                ).FirstOrDefault();
+
+                // Example validation checks
+                //if (string.IsNullOrWhiteSpace(dto.ItemDescription))
+                //{
+                //    result.Errors.Add($"Row {rowNumber}: Item description is required.");
+                //    continue;
+                //}
+
+                //if (dto.UnitPrice < 0)
+                //{
+                //    result.Errors.Add($"Row {rowNumber}: Unit price cannot be negative.");
+                //    continue;
+                //}
+
+                if (existingItem!=null) // Update
+                {
+                    existingItem.tbim_Qty = dto.tbim_Qty;
+                    existingItem.tbim_QtyOp = dto.tbim_QtyOp;
+                    existingItem.tbim_Code = dto.tbim_Code;
+                    existingItem.tbim_CodeTOT = dto.tbim_CodeTOT;
+                    existingItem.tbim_OURP = dto.tbim_OURP;
+                    existingItem.tbim_ThrashDate = dto.tbim_ThrashDate;
+                    existingItem.UserName = dto.UserName;
+                    existingItem.SetDate = DateTime.UtcNow; // or any other logic for setting the date
+                    existingItem.tbim_LocationId = dto.tbim_LocationId;
+                    existingItem.tbim_Zone = dto.tbim_Zone;
+                    existingItem.tbim_DistributorId = dto.tbim_DistributorId;
+                    //existingItem.tbim_Series = dto.tbim_Series;
+                    //existingItem.tbim_Bolt = dto.tbim_Bolt;
+                    //existingItem.tbim_HoleS = dto.tbim_HoleS;
+                    //existingItem.tbim_Brand = dto.tbim_Brand;
+                    //existingItem.tbim_Size = dto.tbim_Size;
+                    //existingItem.tbim_ItemCategoryId = dto.tbim_ItemCategoryId;
+
+                    itemsToUpdate.Add(existingItem);
+
+                    //result.Errors.Add($"Row {rowNumber}: Duplicate item found based on category, size, brand, series, bolt, and holes.");
+                    //continue;
+                }
+                else // Insert 
+                {
+                    itemsToInsert.Add(new ItemMaster
+                    {
+                        tbim_ItemCategoryId = dto.tbim_ItemCategoryId,
+                        tbim_Size = dto.tbim_Size,
+                        tbim_Brand = dto.tbim_Brand,
+                        tbim_Series = dto.tbim_Series,
+                        tbim_Bolt = dto.tbim_Bolt,
+                        tbim_HoleS = dto.tbim_HoleS,
+                        tbim_Zone = dto.tbim_Zone,
+                        tbim_Qty = dto.tbim_Qty,
+                        tbim_QtyOp = dto.tbim_QtyOp,
+                        tbim_Code = dto.tbim_Code,
+                        tbim_CodeTOT = dto.tbim_CodeTOT,
+                        tbim_DistributorId = dto.tbim_DistributorId,
+                        tbim_OURP = dto.tbim_OURP,
+                        tbim_ThrashDate = dto.tbim_ThrashDate,
+                        UserName = dto.UserName,
+                        SetDate = DateTime.UtcNow, // or any other logic for setting the date
+                        tbim_LocationId = dto.tbim_LocationId
+                    });
+                }
+            }
+
+            // 2. If errors exist and skipErrors is false, reject the batch
+            if (result.Errors.Any() && !skipErrors)
+            {
+                result.ErrorCount = result.Errors.Count;
+                return BadRequest(result);
+            }
+
+            // 3. Perform database insertion within a transaction
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                await _context.ItemMasters.AddRangeAsync(itemsToInsert);
+                _context.ItemMasters.UpdateRange(itemsToUpdate);
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                result.SuccessCount = itemsToInsert.Count;
+                result.ErrorCount = result.Errors.Count;
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return StatusCode(500, new { message = "An error occurred during bulk import.", error = ex.InnerException.Message });
+            }
         }
 
         private bool ItemMasterExists(long id)

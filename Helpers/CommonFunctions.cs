@@ -13,5 +13,12 @@
             // 3. Combine them
             return (long?)Convert.ToInt64($"{timePart}{randomPart}");
         }
+
+        public class BulkImportResultDto
+        {
+            public int SuccessCount { get; set; }
+            public int ErrorCount { get; set; }
+            public List<string> Errors { get; set; } = new();
+        }
     }
 }
