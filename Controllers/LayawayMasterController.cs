@@ -307,6 +307,51 @@ namespace TireInventory.Controllers
             return NoContent();
         }
 
+
+        // POST: api/LayawayMaster/HideShowToUsers/
+        [HttpPost("HideShowToUsers")]
+        public async Task<IActionResult> HideShowToUsers(
+            [FromQuery] long invoiceid,
+            [FromQuery] string showhideflag)
+        {
+            string message = string.Empty;
+            try
+            {
+                var layawayMaster = await _context.LayawayMasters
+                    .FirstOrDefaultAsync(m => m.Id == invoiceid);
+                if (layawayMaster == null)
+                {
+                    return BadRequest("Layaway Not Found");
+                }
+
+                if (showhideflag == "D")
+                {
+                    message = "Layaway Made unavailable to users";
+                }
+                else if (showhideflag == "A")
+                {
+                    message = "Layaway Made accessible to users";
+                }
+                else
+                {
+                    return BadRequest("Invalid show/hide flag. Use 'D' or 'A'.");
+                }
+
+                layawayMaster.tbim_Delinfo = showhideflag;
+                _context.Entry(layawayMaster).State = EntityState.Modified;
+                _context.SaveChanges();
+                return Ok(new { Message = message, InvoiceId = invoiceid });
+            }
+            catch (Exception ex)
+            {
+                // Log the exception here (e.g., _logger.LogError(ex, "Error updating invoice..."))
+                //return StatusCode(500, "An error occurred while updating the invoice tracking entities.");
+                return StatusCode(500, ex.InnerException.Message.ToString());
+            }
+
+
+        }
+
         private bool LayawayMasterExists(long id)
         {
             return _context.LayawayMasters.Any(e => e.Id == id);
