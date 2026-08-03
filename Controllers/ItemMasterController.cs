@@ -362,52 +362,65 @@ namespace TireInventory.Controllers
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToList();
 
-                // -------------------------------------------------------------
-                // STEP 2: Find existing Distrubutors & create missing ones
-                // -------------------------------------------------------------
-                // Fetch existing Distrubutors matching the incoming names from the DB
-                var existingDistributors = await _context.Distributors
-                    .Where(c => dtoDistributorNames.Contains(c.Name))
-                    .ToListAsync();
-                var existingDistributorNames = existingDistributors
-                .Select(c => c.Name.ToLower())
-                .ToHashSet();
+                if (!dtoDistributorNames.Any())
+                {
+                    // Early return or handle case where no distributors are passed
+                }
 
-                // Find Distrubutors names from the payload that DO NOT exist in the database
-                var missingDistributorNames = dtoDistributorNames
-                    .Where(name => !existingDistributorNames.Contains(name.ToLower()))
+                // -------------------------------------------------------------
+                // STEP 2: Fetch ALL existing distributors into memory 
+                // (Or match via EF Core Contains if table is very large)
+                // -------------------------------------------------------------
+
+                // Fetch existing records into memory to prevent EF Core SQL 'WITH' CTE generation
+                var allDbDistributors = await _context.Distributors.ToListAsync();
+
+                // Perform case-insensitive matching locally in C#
+                var existingDistributors = allDbDistributors
+                    .Where(d => dtoDistributorNames.Contains(d.Name, StringComparer.OrdinalIgnoreCase))
                     .ToList();
 
-                // If there are missing Distributors, insert them
+                var existingDistributorNames = existingDistributors
+                    .Select(c => c.Name)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                // -------------------------------------------------------------
+                // STEP 3: Identify missing distributors & insert them
+                // -------------------------------------------------------------
+                var missingDistributorNames = dtoDistributorNames
+                    .Where(name => !existingDistributorNames.Contains(name))
+                    .ToList();
+
                 if (missingDistributorNames.Any())
                 {
+                    var currentUserName = items.FirstOrDefault(x => !string.IsNullOrEmpty(x.UserName))?.UserName;
+
                     var newDistributors = missingDistributorNames.Select(name => new Distributors
                     {
                         Name = name,
-                        Address=null,
-                        UserName=items.FirstOrDefault().UserName,
-                        SetDate=DateTime.UtcNow
+                        Address = null,
+                        UserName = currentUserName,
+                        SetDate = DateTime.UtcNow
                     }).ToList();
 
-
                     await _context.Distributors.AddRangeAsync(newDistributors);
-
-                    // Save changes immediately so EF populates generated IDs for new categories
                     await _context.SaveChangesAsync();
 
-                    // Merge new Distributors into our local list for ID lookup
+                    // Merge newly created entities into existing list
                     existingDistributors.AddRange(newDistributors);
                 }
-
-
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred during bulk import.", error = ex.InnerException?.Message ?? ex.Message });
+                return StatusCode(500, new { message = "An error occurred during checking and creating new Distributors.", error = ex.InnerException?.Message ?? ex.Message });
             }
 
 
+
             var result = new BulkImportResultDto();
+            return Ok(result);
+
+
             ItemMaster existingItem = new ItemMaster();
             var itemsToInsert = new List<ItemMaster>();
             var itemsToUpdate = new List<ItemMaster>();
@@ -461,7 +474,7 @@ namespace TireInventory.Controllers
                     existingItem.SetDate = DateTime.UtcNow; // or any other logic for setting the date
                     existingItem.tbim_LocationId = dto.tbim_LocationId;
                     existingItem.tbim_Zone = dto.tbim_Zone;
-                    existingItem.tbim_DistributorId = dto.tbim_DistributorId;
+                    ////existingItem.tbim_DistributorId = dto.tbim_DistributorId;
                     //existingItem.tbim_Series = dto.tbim_Series;
                     //existingItem.tbim_Bolt = dto.tbim_Bolt;
                     //existingItem.tbim_HoleS = dto.tbim_HoleS;
@@ -489,7 +502,7 @@ namespace TireInventory.Controllers
                         tbim_QtyOp = dto.tbim_QtyOp,
                         tbim_Code = dto.tbim_Code,
                         tbim_CodeTOT = dto.tbim_CodeTOT,
-                        tbim_DistributorId = dto.tbim_DistributorId,
+                        ////tbim_DistributorId = dto.tbim_DistributorId,
                         tbim_OURP = dto.tbim_OURP,
                         tbim_ThrashDate = dto.tbim_ThrashDate,
                         UserName = dto.UserName,

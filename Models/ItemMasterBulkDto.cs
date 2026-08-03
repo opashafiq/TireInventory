@@ -7,7 +7,7 @@ namespace TireInventory.Models
         public long Id { get; set; }
 
         [Column("tbim_ItemCategory")]
-        public string tbim_ItemCategoryName { get; set; }
+        public long tbim_ItemCategoryId { get; set; }
 
         public string tbim_Size { get; set; } = null!;
 
