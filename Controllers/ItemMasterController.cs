@@ -211,9 +211,143 @@ namespace TireInventory.Controllers
 
 
         // POST: api/ItemMaster/bulk-import
+        //[HttpPost("bulk-import")]
+        //public async Task<IActionResult> BulkImportItems(
+        //        [FromBody] List<ItemMaster> items,
+        //        [FromQuery] bool skipErrors = false)
+        //{
+        //    if (items == null || !items.Any())
+        //    {
+        //        return BadRequest(new { message = "No item data provided." });
+        //    }
+
+        //    var result = new BulkImportResultDto();
+        //    ItemMaster existingItem = new ItemMaster();
+        //    var itemsToInsert = new List<ItemMaster>();
+        //    var itemsToUpdate = new List<ItemMaster>();
+            
+        //    int itemCount = 0;
+
+        //    // 1. Process and validate incoming rows
+        //    for (int i = 0; i < items.Count; i++)
+        //    {
+        //        var dto = items[i];
+        //        int rowNumber = i + 1;
+        //        //itemCount = _context.ItemMasters.Count(im => 
+        //        //im.tbim_ItemCategoryId == dto.tbim_ItemCategoryId &&
+        //        //im.tbim_Size == dto.tbim_Size &&
+        //        //im.tbim_Brand == dto.tbim_Brand &&
+        //        //im.tbim_Series == dto.tbim_Series &&
+        //        //im.tbim_Bolt == dto.tbim_Bolt &&
+        //        //im.tbim_HoleS == dto.tbim_HoleS 
+        //        //);
+
+        //        existingItem=_context.ItemMasters.Where(im =>
+        //        im.tbim_ItemCategoryId == dto.tbim_ItemCategoryId &&
+        //        im.tbim_Size == dto.tbim_Size &&
+        //        im.tbim_Brand == dto.tbim_Brand &&
+        //        im.tbim_Series == dto.tbim_Series &&
+        //        im.tbim_Bolt == dto.tbim_Bolt &&
+        //        im.tbim_HoleS == dto.tbim_HoleS 
+        //        ).FirstOrDefault();
+
+        //        // Example validation checks
+        //        //if (string.IsNullOrWhiteSpace(dto.ItemDescription))
+        //        //{
+        //        //    result.Errors.Add($"Row {rowNumber}: Item description is required.");
+        //        //    continue;
+        //        //}
+
+        //        //if (dto.UnitPrice < 0)
+        //        //{
+        //        //    result.Errors.Add($"Row {rowNumber}: Unit price cannot be negative.");
+        //        //    continue;
+        //        //}
+
+        //        if (existingItem!=null) // Update
+        //        {
+        //            existingItem.tbim_Qty = dto.tbim_Qty;
+        //            existingItem.tbim_QtyOp = dto.tbim_QtyOp;
+        //            existingItem.tbim_Code = dto.tbim_Code;
+        //            existingItem.tbim_CodeTOT = dto.tbim_CodeTOT;
+        //            existingItem.tbim_OURP = dto.tbim_OURP;
+        //            existingItem.tbim_ThrashDate = dto.tbim_ThrashDate;
+        //            existingItem.UserName = dto.UserName;
+        //            existingItem.SetDate = DateTime.UtcNow; // or any other logic for setting the date
+        //            existingItem.tbim_LocationId = dto.tbim_LocationId;
+        //            existingItem.tbim_Zone = dto.tbim_Zone;
+        //            existingItem.tbim_DistributorId = dto.tbim_DistributorId;
+        //            //existingItem.tbim_Series = dto.tbim_Series;
+        //            //existingItem.tbim_Bolt = dto.tbim_Bolt;
+        //            //existingItem.tbim_HoleS = dto.tbim_HoleS;
+        //            //existingItem.tbim_Brand = dto.tbim_Brand;
+        //            //existingItem.tbim_Size = dto.tbim_Size;
+        //            //existingItem.tbim_ItemCategoryId = dto.tbim_ItemCategoryId;
+
+        //            itemsToUpdate.Add(existingItem);
+
+        //            //result.Errors.Add($"Row {rowNumber}: Duplicate item found based on category, size, brand, series, bolt, and holes.");
+        //            //continue;
+        //        }
+        //        else // Insert 
+        //        {
+        //            itemsToInsert.Add(new ItemMaster
+        //            {
+        //                tbim_ItemCategoryId = dto.tbim_ItemCategoryId,
+        //                tbim_Size = dto.tbim_Size,
+        //                tbim_Brand = dto.tbim_Brand,
+        //                tbim_Series = dto.tbim_Series,
+        //                tbim_Bolt = dto.tbim_Bolt,
+        //                tbim_HoleS = dto.tbim_HoleS,
+        //                tbim_Zone = dto.tbim_Zone,
+        //                tbim_Qty = dto.tbim_Qty,
+        //                tbim_QtyOp = dto.tbim_QtyOp,
+        //                tbim_Code = dto.tbim_Code,
+        //                tbim_CodeTOT = dto.tbim_CodeTOT,
+        //                tbim_DistributorId = dto.tbim_DistributorId,
+        //                tbim_OURP = dto.tbim_OURP,
+        //                tbim_ThrashDate = dto.tbim_ThrashDate,
+        //                UserName = dto.UserName,
+        //                SetDate = DateTime.UtcNow, // or any other logic for setting the date
+        //                tbim_LocationId = dto.tbim_LocationId
+        //            });
+        //        }
+        //    }
+
+        //    // 2. If errors exist and skipErrors is false, reject the batch
+        //    if (result.Errors.Any() && !skipErrors)
+        //    {
+        //        result.ErrorCount = result.Errors.Count;
+        //        return BadRequest(result);
+        //    }
+
+        //    // 3. Perform database insertion within a transaction
+        //    using var transaction = await _context.Database.BeginTransactionAsync();
+        //    try
+        //    {
+        //        await _context.ItemMasters.AddRangeAsync(itemsToInsert);
+        //        _context.ItemMasters.UpdateRange(itemsToUpdate);
+        //        await _context.SaveChangesAsync();
+        //        await transaction.CommitAsync();
+
+        //        result.SuccessCount = itemsToInsert.Count;
+        //        result.ErrorCount = result.Errors.Count;
+
+        //        return Ok(result);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        await transaction.RollbackAsync();
+        //        return StatusCode(500, new { message = "An error occurred during bulk import.", error = ex.InnerException.Message });
+        //    }
+        //}
+        
+        
+        
+        // POST: api/ItemMaster/bulk-import-cat
         [HttpPost("bulk-import")]
         public async Task<IActionResult> BulkImportItems(
-                [FromBody] List<ItemMaster> items,
+                [FromBody] List<ItemMasterBulkDto> items,
                 [FromQuery] bool skipErrors = false)
         {
             if (items == null || !items.Any())
@@ -221,16 +355,128 @@ namespace TireInventory.Controllers
                 return BadRequest(new { message = "No item data provided." });
             }
 
+            var newItems = new List<ItemMaster>();
+
+            try
+            {
+                // -------------------------------------------------------------
+                // STEP 1: Extract distinct, non-empty Distributor Names from DTOs
+                // -------------------------------------------------------------
+                var dtoDistributorNames = items
+                    .Where(x => !string.IsNullOrWhiteSpace(x.tbim_DistributorName))
+                    .Select(x => x.tbim_DistributorName.Trim())
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+                if (!dtoDistributorNames.Any())
+                {
+                    // Early return or handle case where no distributors are passed
+                }
+
+                // -------------------------------------------------------------
+                // STEP 2: Fetch ALL existing distributors into memory 
+                // (Or match via EF Core Contains if table is very large)
+                // -------------------------------------------------------------
+
+                // Fetch existing records into memory to prevent EF Core SQL 'WITH' CTE generation
+                var allDbDistributors = await _context.Distributors.ToListAsync();
+
+                // Perform case-insensitive matching locally in C#
+                var existingDistributors = allDbDistributors
+                    .Where(d => dtoDistributorNames.Contains(d.Name, StringComparer.OrdinalIgnoreCase))
+                    .ToList();
+
+                var existingDistributorNames = existingDistributors
+                    .Select(c => c.Name)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                // -------------------------------------------------------------
+                // STEP 3: Identify missing distributors & insert them
+                // -------------------------------------------------------------
+                var missingDistributorNames = dtoDistributorNames
+                    .Where(name => !existingDistributorNames.Contains(name))
+                    .ToList();
+
+                if (missingDistributorNames.Any())
+                {
+                    var currentUserName = items.FirstOrDefault(x => !string.IsNullOrEmpty(x.UserName))?.UserName;
+
+                    var newDistributors = missingDistributorNames.Select(name => new Distributors
+                    {
+                        Name = name,
+                        Address = null,
+                        UserName = currentUserName,
+                        SetDate = DateTime.UtcNow
+                    }).ToList();
+
+                    await _context.Distributors.AddRangeAsync(newDistributors);
+                    await _context.SaveChangesAsync();
+
+                    // Merge newly created entities into existing list
+                    existingDistributors.AddRange(newDistributors);
+                }
+
+                //// Recreating ItemMaster
+                // -------------------------------------------------------------
+                // STEP 4: Create a Case-Insensitive Lookup Dictionary
+                // Maps: Distributor Name -> Distributor ID
+                // -------------------------------------------------------------
+                var distributorLookup = existingDistributors
+                    .ToDictionary(
+                        d => d.Name.Trim(),
+                        d => d.Id,
+                        StringComparer.OrdinalIgnoreCase
+                    );
+
+                // -------------------------------------------------------------
+                // STEP 5: Map DTOs to Items Entities
+                // -------------------------------------------------------------
+                newItems = items.Select(dto => new ItemMaster
+                {
+                    Id=dto.Id,
+                    tbim_ItemCategoryId=dto.tbim_ItemCategoryId,
+                    tbim_Size =dto.tbim_Size,
+                    tbim_Brand=dto.tbim_Brand,
+                    tbim_Series=dto.tbim_Series,
+                    tbim_Bolt=dto.tbim_Bolt,
+                    tbim_HoleS=dto.tbim_HoleS,
+                    tbim_Zone=dto.tbim_Zone,
+                    tbim_Qty=dto.tbim_Qty,
+                    tbim_QtyOp=dto.tbim_QtyOp,
+                    tbim_Code=dto.tbim_Code,
+                    tbim_CodeTOT=dto.tbim_CodeTOT,
+                    tbim_DistributorId = !string.IsNullOrWhiteSpace(dto.tbim_DistributorName) &&
+                                    distributorLookup.TryGetValue(dto.tbim_DistributorName.Trim(), out int distributorId)
+                        ? distributorId
+                        : null, // Set default/0 or null if DistributorId is nullable (long?)
+                    tbim_OURP=dto.tbim_OURP,
+                    tbim_ThrashDate=dto.tbim_ThrashDate,
+                    tbim_LocationId=dto.tbim_LocationId,
+                    UserName = dto.UserName,
+                    SetDate = DateTime.UtcNow
+                }).ToList();
+
+
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred during checking and creating new Distributors.", error = ex.InnerException?.Message ?? ex.Message });
+            }
+
+
             var result = new BulkImportResultDto();
+            //return Ok(newItems);
+
+
             ItemMaster existingItem = new ItemMaster();
             var itemsToInsert = new List<ItemMaster>();
             var itemsToUpdate = new List<ItemMaster>();
             int itemCount = 0;
 
             // 1. Process and validate incoming rows
-            for (int i = 0; i < items.Count; i++)
+            for (int i = 0; i < newItems.Count; i++)
             {
-                var dto = items[i];
+                var dto = newItems[i];
                 int rowNumber = i + 1;
                 //itemCount = _context.ItemMasters.Count(im => 
                 //im.tbim_ItemCategoryId == dto.tbim_ItemCategoryId &&
@@ -304,205 +550,6 @@ namespace TireInventory.Controllers
                         tbim_Code = dto.tbim_Code,
                         tbim_CodeTOT = dto.tbim_CodeTOT,
                         tbim_DistributorId = dto.tbim_DistributorId,
-                        tbim_OURP = dto.tbim_OURP,
-                        tbim_ThrashDate = dto.tbim_ThrashDate,
-                        UserName = dto.UserName,
-                        SetDate = DateTime.UtcNow, // or any other logic for setting the date
-                        tbim_LocationId = dto.tbim_LocationId
-                    });
-                }
-            }
-
-            // 2. If errors exist and skipErrors is false, reject the batch
-            if (result.Errors.Any() && !skipErrors)
-            {
-                result.ErrorCount = result.Errors.Count;
-                return BadRequest(result);
-            }
-
-            // 3. Perform database insertion within a transaction
-            using var transaction = await _context.Database.BeginTransactionAsync();
-            try
-            {
-                await _context.ItemMasters.AddRangeAsync(itemsToInsert);
-                _context.ItemMasters.UpdateRange(itemsToUpdate);
-                await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
-
-                result.SuccessCount = itemsToInsert.Count;
-                result.ErrorCount = result.Errors.Count;
-
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync();
-                return StatusCode(500, new { message = "An error occurred during bulk import.", error = ex.InnerException.Message });
-            }
-        }
-        // POST: api/ItemMaster/bulk-import-cat
-        [HttpPost("bulk-import-cat")]
-        public async Task<IActionResult> BulkImportItemsCat(
-                [FromBody] List<ItemMasterBulkDto> items,
-                [FromQuery] bool skipErrors = false)
-        {
-            if (items == null || !items.Any())
-            {
-                return BadRequest(new { message = "No item data provided." });
-            }
-
-            try
-            {
-                // -------------------------------------------------------------
-                // STEP 1: Extract distinct, non-empty Distributor Names from DTOs
-                // -------------------------------------------------------------
-                var dtoDistributorNames = items
-                    .Where(x => !string.IsNullOrWhiteSpace(x.tbim_DistributorName))
-                    .Select(x => x.tbim_DistributorName.Trim())
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .ToList();
-
-                if (!dtoDistributorNames.Any())
-                {
-                    // Early return or handle case where no distributors are passed
-                }
-
-                // -------------------------------------------------------------
-                // STEP 2: Fetch ALL existing distributors into memory 
-                // (Or match via EF Core Contains if table is very large)
-                // -------------------------------------------------------------
-
-                // Fetch existing records into memory to prevent EF Core SQL 'WITH' CTE generation
-                var allDbDistributors = await _context.Distributors.ToListAsync();
-
-                // Perform case-insensitive matching locally in C#
-                var existingDistributors = allDbDistributors
-                    .Where(d => dtoDistributorNames.Contains(d.Name, StringComparer.OrdinalIgnoreCase))
-                    .ToList();
-
-                var existingDistributorNames = existingDistributors
-                    .Select(c => c.Name)
-                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-                // -------------------------------------------------------------
-                // STEP 3: Identify missing distributors & insert them
-                // -------------------------------------------------------------
-                var missingDistributorNames = dtoDistributorNames
-                    .Where(name => !existingDistributorNames.Contains(name))
-                    .ToList();
-
-                if (missingDistributorNames.Any())
-                {
-                    var currentUserName = items.FirstOrDefault(x => !string.IsNullOrEmpty(x.UserName))?.UserName;
-
-                    var newDistributors = missingDistributorNames.Select(name => new Distributors
-                    {
-                        Name = name,
-                        Address = null,
-                        UserName = currentUserName,
-                        SetDate = DateTime.UtcNow
-                    }).ToList();
-
-                    await _context.Distributors.AddRangeAsync(newDistributors);
-                    await _context.SaveChangesAsync();
-
-                    // Merge newly created entities into existing list
-                    existingDistributors.AddRange(newDistributors);
-                }
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "An error occurred during checking and creating new Distributors.", error = ex.InnerException?.Message ?? ex.Message });
-            }
-
-
-
-            var result = new BulkImportResultDto();
-            return Ok(result);
-
-
-            ItemMaster existingItem = new ItemMaster();
-            var itemsToInsert = new List<ItemMaster>();
-            var itemsToUpdate = new List<ItemMaster>();
-            int itemCount = 0;
-
-            // 1. Process and validate incoming rows
-            for (int i = 0; i < items.Count; i++)
-            {
-                var dto = items[i];
-                int rowNumber = i + 1;
-                //itemCount = _context.ItemMasters.Count(im => 
-                //im.tbim_ItemCategoryId == dto.tbim_ItemCategoryId &&
-                //im.tbim_Size == dto.tbim_Size &&
-                //im.tbim_Brand == dto.tbim_Brand &&
-                //im.tbim_Series == dto.tbim_Series &&
-                //im.tbim_Bolt == dto.tbim_Bolt &&
-                //im.tbim_HoleS == dto.tbim_HoleS 
-                //);
-
-                existingItem=_context.ItemMasters.Where(im =>
-                im.tbim_ItemCategoryId == dto.tbim_ItemCategoryId &&
-                im.tbim_Size == dto.tbim_Size &&
-                im.tbim_Brand == dto.tbim_Brand &&
-                im.tbim_Series == dto.tbim_Series &&
-                im.tbim_Bolt == dto.tbim_Bolt &&
-                im.tbim_HoleS == dto.tbim_HoleS 
-                ).FirstOrDefault();
-
-                // Example validation checks
-                //if (string.IsNullOrWhiteSpace(dto.ItemDescription))
-                //{
-                //    result.Errors.Add($"Row {rowNumber}: Item description is required.");
-                //    continue;
-                //}
-
-                //if (dto.UnitPrice < 0)
-                //{
-                //    result.Errors.Add($"Row {rowNumber}: Unit price cannot be negative.");
-                //    continue;
-                //}
-
-                if (existingItem!=null) // Update
-                {
-                    existingItem.tbim_Qty = dto.tbim_Qty;
-                    existingItem.tbim_QtyOp = dto.tbim_QtyOp;
-                    existingItem.tbim_Code = dto.tbim_Code;
-                    existingItem.tbim_CodeTOT = dto.tbim_CodeTOT;
-                    existingItem.tbim_OURP = dto.tbim_OURP;
-                    existingItem.tbim_ThrashDate = dto.tbim_ThrashDate;
-                    existingItem.UserName = dto.UserName;
-                    existingItem.SetDate = DateTime.UtcNow; // or any other logic for setting the date
-                    existingItem.tbim_LocationId = dto.tbim_LocationId;
-                    existingItem.tbim_Zone = dto.tbim_Zone;
-                    ////existingItem.tbim_DistributorId = dto.tbim_DistributorId;
-                    //existingItem.tbim_Series = dto.tbim_Series;
-                    //existingItem.tbim_Bolt = dto.tbim_Bolt;
-                    //existingItem.tbim_HoleS = dto.tbim_HoleS;
-                    //existingItem.tbim_Brand = dto.tbim_Brand;
-                    //existingItem.tbim_Size = dto.tbim_Size;
-                    //existingItem.tbim_ItemCategoryId = dto.tbim_ItemCategoryId;
-
-                    itemsToUpdate.Add(existingItem);
-
-                    //result.Errors.Add($"Row {rowNumber}: Duplicate item found based on category, size, brand, series, bolt, and holes.");
-                    //continue;
-                }
-                else // Insert 
-                {
-                    itemsToInsert.Add(new ItemMaster
-                    {
-                        tbim_ItemCategoryId = dto.tbim_ItemCategoryId,
-                        tbim_Size = dto.tbim_Size,
-                        tbim_Brand = dto.tbim_Brand,
-                        tbim_Series = dto.tbim_Series,
-                        tbim_Bolt = dto.tbim_Bolt,
-                        tbim_HoleS = dto.tbim_HoleS,
-                        tbim_Zone = dto.tbim_Zone,
-                        tbim_Qty = dto.tbim_Qty,
-                        tbim_QtyOp = dto.tbim_QtyOp,
-                        tbim_Code = dto.tbim_Code,
-                        tbim_CodeTOT = dto.tbim_CodeTOT,
-                        ////tbim_DistributorId = dto.tbim_DistributorId,
                         tbim_OURP = dto.tbim_OURP,
                         tbim_ThrashDate = dto.tbim_ThrashDate,
                         UserName = dto.UserName,
