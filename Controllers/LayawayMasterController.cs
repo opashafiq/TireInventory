@@ -4,7 +4,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Identity.Client;
 using TireInventory.Data;
+using TireInventory.Helpers;
 using TireInventory.Models;
 
 namespace TireInventory.Controllers
@@ -21,6 +23,7 @@ namespace TireInventory.Controllers
             _context = context;
         }
 
+        #region Layawaymaster CRUD
         // GET: api/LayawayMaster
         [HttpGet]
         public async Task<ActionResult<IEnumerable<PagedLayawayResponseDto>>> GetLayawayMasters(
@@ -177,7 +180,7 @@ namespace TireInventory.Controllers
             if (createLayawayDto == null) return BadRequest();
 
             var layawayMaster = MapToLayawayMaster(createLayawayDto.LayawayMasterDto ?? new LayawayMasterDto());
-            layawayMaster.tbim_InvoiceIdRad = GenerateTransactionID();
+            layawayMaster.tbim_InvoiceIdRad = CommonFunctions.GenerateTransactionID();
 
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
@@ -357,6 +360,9 @@ namespace TireInventory.Controllers
             return _context.LayawayMasters.Any(e => e.Id == id);
         }
 
+        #endregion
+
+        #region LayawayMasterCRUD Helpers
         // Mapping helpers (parallel to Invoice controller)
         private CreateLayawayDto MapToCreateLayawayDto(LayawayMaster lm)
         {
@@ -744,16 +750,63 @@ namespace TireInventory.Controllers
             }
         }
 
-        private long? GenerateTransactionID()
+        #endregion
+
+        #region Import LayawayMaster to InvoiceMaster
+
+
+
+        // POST: api/LayawayMaster/ImportToInvoice/{layawayid}
+        [HttpPost("ImportToInvoice/{layawayid}")]
+        public async Task<IActionResult> ImportToInvoice(
+            long layawayid,
+            [FromQuery] DateTime? importdate = null
+
+            )
         {
-            // 1. Get current time as HHmmss
-            string timePart = DateTime.Now.ToString("HHmmss");
+            //return BadRequest("Invalid show/hide flag. Use 'D' or 'A'.");
+            //return StatusCode(500, e.InnerException.Message.ToString());
 
-            // 2. Generate random number up to 1,000,000
-            int randomPart = Random.Shared.Next(0, 1000000);
+            // Check for Import Date
+            if (!CheckImportDate(importdate))
+                return StatusCode(500, "Import Date not Valid/Provided");
 
-            // 3. Combine them
-            return (long?)Convert.ToInt64($"{timePart}{randomPart}");
+            // Check whether fully refunded
+            if (IsFullyRefunded(layawayid))
+                return StatusCode(500, "This Layaway has been refunded fully and hence can't be imported");            
+            
+            // Check whether the layaway is hidden to users
+            if (IsHidden(layawayid))
+                return StatusCode(500, "This Layaway is hidden from users and hence can't be imported");
+
+            // After creating an InvoiceMaster from LayawayMaster we should return following from InvoiceMasterController
+            //return await GetInvoiceMaster(invoiceMaster.Id);
+
+            return Ok(new { Message = "Imported Successfully", InvoiceId = 1 });
         }
+
+        private bool CheckImportDate(DateTime? importdate)
+        {
+            if (importdate == null)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool IsFullyRefunded(long layawayid)
+        {
+            if (_context.LayawayMasters.Find(layawayid).tbim_RefundType == "F") return true;
+            return false;
+        }        
+        
+        private bool IsHidden(long layawayid)
+        {
+            if (_context.LayawayMasters.Find(layawayid).tbim_Delinfo == "D") return true;
+            return false;
+        }
+
+        #endregion
     }
 }
