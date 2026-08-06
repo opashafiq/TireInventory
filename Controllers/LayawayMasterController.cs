@@ -780,9 +780,219 @@ namespace TireInventory.Controllers
                 return StatusCode(500, "This Layaway is hidden from users and hence can't be imported");
 
             // After creating an InvoiceMaster from LayawayMaster we should return following from InvoiceMasterController
-            //return await GetInvoiceMaster(invoiceMaster.Id);
+            // return await GetInvoiceMaster(invoiceMaster.Id);
 
-            return Ok(new { Message = "Imported Successfully", InvoiceId = 1 });
+            /*
+             ## Import Logic
+             1. Create InvoiceMaster from LayawayMaster and save the new InvoiceMaster.Id
+             2. Create InvoiceDetails from LayawayDetails and save them with the new InvoiceMaster.Id
+             3. Create InvoicePayments from LayawayPayments and save them with the new InvoiceMaster.Id
+             4. Create InvoiceRefundMaster from LayawayRefundMaster and save them with the new InvoiceMaster.Id. 
+                Save the RefundAmount in InvoiceMaster.
+                Save the RefundType in InvoiceMaster.
+                Save the InvoiceRefundMasterId
+             5. Create InvoiceRefundDetails from LayawayRefundDetails and save them with the new InvoiceRefundMaster.Id
+             6. Create InvoiceRefundPayments from LayawayRefundPayments and save them with the new InvoiceRefundMaster.Id
+
+             7. Delete the related records from: 
+                LayawayMaster, LayawayDetails, LayawayPayments, LayawayRefundMaster, LayawayRefundDetails, LayawayRefundPayments
+                 
+             */
+
+            // Get the LayawayMaster record
+            LayawayMaster layawayMaster = _context.LayawayMasters.Find(layawayid);
+            List<LayawayDetails> layawayDetails = _context.LayawayDetails.Where(d => d.tbid_InvoiceId == layawayid).ToList();
+            List<LayawayPayments> layawayPayments = _context.LayawayPayments.Where(p => p.tbip_InvoiceId == layawayid).ToList();
+
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                //1. Create InvoiceMaster from LayawayMaster
+                long newInvoiceMasterId = CreateInvoiceMasterFromLayawayMaster(layawayMaster, importdate ?? DateTime.UtcNow);
+                //2. Create InvoiceDetails from LayawayDetails
+                CreateInvoiceDetailsFromLayawayDetails(newInvoiceMasterId, layawayDetails);
+                //3. Create InvoicePayments from LayawayPayments
+                CreateInvoicePaymentsFromLayawayPayments(newInvoiceMasterId, layawayPayments);
+
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return RedirectToAction(
+                  actionName: "GetInvoiceMaster",
+                  controllerName: "InvoiceMaster",
+                  routeValues: new { id = 54119 }
+                  );
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync();
+                return StatusCode(500, "Critical database transaction failure while importing Layaway to Invoice.");
+            }
+
+
+  
+
+
+            //return Ok(new { Message = "Imported Successfully", InvoiceId = 1 });
+        }
+
+        private long CreateInvoiceMasterFromLayawayMaster(LayawayMaster lm, DateTime importdate)
+        {
+            InvoiceMaster im = new InvoiceMaster();
+            im.tbim_InvoiceIdRad = CommonFunctions.GenerateTransactionID();
+            im.tbim_Phone = lm.tbim_Phone;
+            im.tbim_InvDate = importdate; // Use the provided import date
+            im.tbim_Name = lm.tbim_Name;
+            im.tbim_TaxId = lm.tbim_TaxId;
+            im.tbim_VehicleMake = lm.tbim_VehicleMake;
+            im.tbim_Model = lm.tbim_Model;
+            im.tbim_Year = lm.tbim_Year;
+            im.tbim_Odometer = lm.tbim_Odometer;
+            im.tbim_TreadDepth = lm.tbim_TreadDepth;
+            im.tbim_License = lm.tbim_License;
+            im.tbim_SubTotal = lm.tbim_SubTotal;
+            im.tbim_SaleTax = lm.tbim_SaleTax;
+            im.tbim_Labour = lm.tbim_Labour;
+            im.tbim_DisPer = lm.tbim_DisPer;
+            im.tbim_DisAmt = lm.tbim_DisAmt;
+            im.tbim_Total = lm.tbim_Total;
+            im.tbim_PaidAmt = lm.tbim_PaidAmt;
+            im.tbim_AdjAmt = lm.tbim_AdjAmt;
+            im.tbim_AdjTotal = lm.tbim_AdjTotal;
+            im.tbim_PayInfo = lm.tbim_PayInfo;
+            im.tbim_Note = lm.tbim_Note;
+            im.tbim_Delinfo = lm.tbim_Delinfo;
+            im.tbim_CompanyName = lm.tbim_CompanyName;
+            im.tbim_CompanyAddress = lm.tbim_CompanyAddress;
+            im.tbim_Item_Delete_after_Invoice_Create = lm.tbim_Item_Delete_after_Layaway_Create;
+            im.tbim_LaywayNo= lm.Id; // Store the original LayawayMaster Id
+            im.tbim_LaywayDate = lm.tbim_InvDate; // Store the original LayawayMaster date
+
+            im.UserName = lm.UserName;
+            im.SetDate = DateTime.UtcNow; // Set to current date/time
+            im.tbim_Left_Front = lm.tbim_Left_Front;
+            im.tbim_Right_Front = lm.tbim_Right_Front;
+            im.tbim_Left_Rear = lm.tbim_Left_Rear;
+            im.tbim_Right_Rear = lm.tbim_Right_Rear;
+            im.tbim_EmailAddress = lm.tbim_EmailAddress;
+            im.tbim_IDNo = lm.tbim_IDNo;
+            im.tbim_RefundType = lm.tbim_RefundType;
+            im.tbim_LocationDetailsId = lm.tbim_LocationId;
+
+            _context.InvoiceMasters.Add(im);
+            _context.SaveChanges(); // Save to get the new InvoiceMaster Id
+            return im.Id; // Return the new InvoiceMaster Id
+
+        }
+
+        private void CreateInvoiceDetailsFromLayawayDetails(long newInvoiceMasterId, List<LayawayDetails> layawayDetails)
+        {
+            foreach (var ld in layawayDetails)
+            {
+                InvoiceDetails id = new InvoiceDetails
+                {
+                    tbid_InvoiceId = newInvoiceMasterId,
+                    tbid_ItemId = ld.tbid_ItemId,
+                    tbid_ItemCategory = ld.tbid_ItemCategory,
+                    tbid_DepartmentName = ld.tbid_DepartmentName,
+                    tbid_Size = ld.tbid_Size,
+                    tbid_Brand = ld.tbid_Brand,
+                    tbid_Series = ld.tbid_Series,
+                    tbid_Bolt = ld.tbid_Bolt,
+                    tbid_HoleS = ld.tbid_HoleS,
+                    tbid_Zone = ld.tbid_Zone,
+                    tbid_DistributorId = ld.tbid_DistributorId,
+                    tbid_DistributorName = ld.tbid_DistributorName,
+                    tbid_Qty = ld.tbid_Qty,
+                    tbid_Taxable = ld.tbid_Taxable,
+                    tbid_UnitPrice = ld.tbid_UnitPrice,
+                    tbid_LineTotal = ld.tbid_LineTotal,
+                    tbid_TaxAmt = ld.tbid_TaxAmt
+                };
+                _context.InvoiceDetails.Add(id);
+            }
+        }
+
+
+
+        private void CreateInvoicePaymentsFromLayawayPayments(long newInvoiceMasterId, List<LayawayPayments> layawayPayments)
+        {
+            foreach (var lp in layawayPayments)
+            {
+                InvoicePayments ip = new InvoicePayments
+                {
+                    tbip_InvoiceId = newInvoiceMasterId,
+                    tbip_PaymentId = lp.tbip_PaymentId,
+                    tbip_PayAmt = lp.tbip_PayAmt,
+                    tbip_Date = lp.tbip_Date,
+                    tbip_PaymentType = lp.tbip_PaymentType,
+                    tbip_LayawayId= lp.tbip_InvoiceId, // Store the original LayawayMaster Id
+                    tdip_fromlayaway= "Y", // Indicate that this payment came from a layaway
+                    tbip_LayawayDate = lp.tbip_Date, // Store the original LayawayMaster payment date
+
+                };
+                _context.InvoicePayments.Add(ip);
+            }
+        }
+
+        private void CreateInvoiceRefundMasterFromLayawayRefundMaster(long newInvoiceMasterId, LayawayRefundMaster layawayRefundMaster)
+        {
+            InvoiceRefundMaster irm = new InvoiceRefundMaster
+            {
+                tbirm_InvoiceId = newInvoiceMasterId,
+                tbirm_RefundAmt = layawayRefundMaster.tbirm_RefundAmt,
+                tbirm_RefundDate = layawayRefundMaster.tbirm_RefundDate,
+                tbirm_RefundType = layawayRefundMaster.tbirm_RefundType,
+                tbirm_Note = layawayRefundMaster.tbirm_Note,
+                UserName = layawayRefundMaster.UserName,
+                SetDate = DateTime.UtcNow // Set to current date/time
+            };
+            _context.InvoiceRefundMasters.Add(irm);
+        }
+
+        private void CreateInvoiceRefundDetailsFromLayawayRefundDetails(long newInvoiceRefundMasterId, List<LayawayRefundDetails> layawayRefundDetails)
+        {
+            foreach (var lrd in layawayRefundDetails)
+            {
+                InvoiceRefundDetails ird = new InvoiceRefundDetails
+                {
+                    tbird_InvoiceRefundId = newInvoiceRefundMasterId,
+                    tbird_ItemId = lrd.tbird_ItemId,
+                    tbird_ItemCategory = lrd.tbird_ItemCategory,
+                    tbird_DepartmentName = lrd.tbird_DepartmentName,
+                    tbird_Size = lrd.tbird_Size,
+                    tbird_Brand = lrd.tbird_Brand,
+                    tbird_Series = lrd.tbird_Series,
+                    tbird_Bolt = lrd.tbird_Bolt,
+                    tbird_HoleS = lrd.tbird_HoleS,
+                    tbird_Zone = lrd.tbird_Zone,
+                    tbird_DistributorId = lrd.tbird_DistributorId,
+                    tbird_DistributorName = lrd.tbird_DistributorName,
+                    tbird_Qty = lrd.tbird_Qty,
+                    tbird_Taxable = lrd.tbird_Taxable,
+                    tbird_UnitPrice = lrd.tbird_UnitPrice,
+                    tbird_LineTotal = lrd.tbird_LineTotal,
+                    tbird_TaxAmt = lrd.tbird_TaxAmt
+                };
+                _context.InvoiceRefundDetails.Add(ird);
+            }
+        }
+
+        private void CreateInvoiceRefundPaymentsFromLayawayRefundPayments(long newInvoiceRefundMasterId, List<LayawayRefundPayments> layawayRefundPayments)
+        {
+            foreach (var lrp in layawayRefundPayments)
+            {
+                InvoiceRefundPayments irp = new InvoiceRefundPayments
+                {
+                    tbirp_InvoiceRefundId = newInvoiceRefundMasterId,
+                    tbirp_PaymentId = lrp.tbip_PaymentId,
+                    tbirp_PayAmt = lrp.tbip_PayAmt,
+                    tbirp_Date = lrp.tbip_Date,
+                    tbirp_PaymentType = lrp.tbip_PaymentType
+                };
+                _context.InvoiceRefundPayments.Add(irp);
+            }
         }
 
         private bool CheckImportDate(DateTime? importdate)

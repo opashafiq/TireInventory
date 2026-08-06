@@ -144,6 +144,15 @@ namespace TireInventory.Controllers
                 ProcessInvoiceRefundDetailsUpsert(refundMaster, createDto.invoiceRefundDetailsDto ?? new List<InvoiceRefundDetailsDto>());
                 ProcessInvoiceRefundPaymentsUpsert(refundMaster, createDto.invoiceRefundPaymentsDto ?? new List<InvoiceRefundPaymentsDto>());
 
+                // Edit related InvoiceMaster to mark as refunded if applicable
+                var invoiceMaster = await _context.InvoiceMasters.FindAsync(refundMaster.tbirm_InvoiceId);
+                // This will be tracked and saved in the same transaction as the refund creation, ensuring consistency
+                if (invoiceMaster != null)
+                {
+                    invoiceMaster.tbim_RefundType = refundMaster.tbirm_RefundType;
+                }
+
+
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
                 return Ok(new { Message = "Refund adjusted successfully", RefundId = id });
@@ -230,6 +239,14 @@ namespace TireInventory.Controllers
                 if (payments.Count > 0)
                 {
                     _context.InvoiceRefundPayments.AddRange(payments);
+                }
+
+                // Edit related InvoiceMaster to mark as refunded if applicable
+                var invoiceMaster = await _context.InvoiceMasters.FindAsync(refundMaster.tbirm_InvoiceId);
+                // This will be tracked and saved in the same transaction as the refund creation, ensuring consistency
+                if (invoiceMaster != null)
+                {
+                    invoiceMaster.tbim_RefundType = refundMaster.tbirm_RefundType;
                 }
 
                 await _context.SaveChangesAsync();

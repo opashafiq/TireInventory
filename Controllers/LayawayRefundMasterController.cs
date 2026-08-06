@@ -143,6 +143,15 @@ namespace TireInventory.Controllers
                 ProcessLayawayRefundDetailsUpsert(refundMaster, createDto.layawayRefundDetailsDto ?? new List<LayawayRefundDetailsDto>());
                 ProcessLayawayRefundPaymentsUpsert(refundMaster, createDto.layawayRefundPaymentsDto ?? new List<LayawayRefundPaymentsDto>());
 
+                // Edit related LayawayMaster to mark as refunded if applicable
+                var layawayMaster = await _context.LayawayMasters.FindAsync(refundMaster.Layaway_tbim_InvoiceId);
+                // This will be tracked and saved in the same transaction as the refund creation, ensuring consistency
+                if (layawayMaster != null)
+                {
+                    layawayMaster.tbim_RefundType = refundMaster.tbirm_RefundType;
+                }
+
+
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
                 return Ok(new { Message = "Layaway refund adjusted successfully", RefundId = id });
@@ -227,6 +236,14 @@ namespace TireInventory.Controllers
                 if (payments.Count > 0)
                 {
                     _context.LayawayRefundPayments.AddRange(payments);
+                }
+
+                // Edit related LayawayMaster to mark as refunded if applicable
+                var layawayMaster = await _context.LayawayMasters.FindAsync(refundMaster.Layaway_tbim_InvoiceId);
+                // This will be tracked and saved in the same transaction as the refund creation, ensuring consistency
+                if (layawayMaster != null)
+                {
+                    layawayMaster.tbim_RefundType = refundMaster.tbirm_RefundType;
                 }
 
                 await _context.SaveChangesAsync();
