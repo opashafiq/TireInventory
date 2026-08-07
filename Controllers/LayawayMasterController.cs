@@ -804,6 +804,11 @@ namespace TireInventory.Controllers
             List<LayawayDetails> layawayDetails = _context.LayawayDetails.Where(d => d.tbid_InvoiceId == layawayid).ToList();
             List<LayawayPayments> layawayPayments = _context.LayawayPayments.Where(p => p.tbip_InvoiceId == layawayid).ToList();
 
+            // Get the LayawayRefundMaster Record
+            LayawayRefundMaster layawayRefundMaster = _context.LayawayRefundMasters.Where(l => l.Layaway_tbim_InvoiceId == layawayMaster.Id).FirstOrDefault();
+            List<LayawayRefundDetails> layawayRefundDetails = _context.LayawayRefundDetails.Where(d => d.tbird_Layaway_RefundId == layawayRefundMaster.Id).ToList();
+            List<LayawayRefundPayments> layawayRefundPayments = _context.LayawayRefundPayments.Where(p => p.tbirp_Layaway_RefundId == layawayRefundMaster.Id).ToList();
+
 
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
@@ -814,14 +819,28 @@ namespace TireInventory.Controllers
                 CreateInvoiceDetailsFromLayawayDetails(newInvoiceMasterId, layawayDetails);
                 //3. Create InvoicePayments from LayawayPayments
                 CreateInvoicePaymentsFromLayawayPayments(newInvoiceMasterId, layawayPayments);
+                //4. Create InvoiceRefundMaster from LayawayRefundMaster
+                long newInvoiceRefundMasterId = CreateInvoiceRefundMasterFromLayawayRefundMaster(newInvoiceMasterId, layawayRefundMaster);
+                //5. Create InvoiceRefundDetails from LayawayRefundDetails
+                CreateInvoiceRefundDetailsFromLayawayRefundDetails(newInvoiceRefundMasterId, layawayRefundDetails);
+                //6. Create InvoiceRefundPayments from LayawayRefundPayments
+                CreateInvoiceRefundPaymentsFromLayawayRefundPayments(newInvoiceRefundMasterId, layawayRefundPayments);
 
+                // Deletion
+                _context.LayawayRefundPayments.RemoveRange(layawayRefundPayments);
+                _context.LayawayRefundDetails.RemoveRange(layawayRefundDetails);
+                _context.LayawayRefundMasters.Remove(layawayRefundMaster);
+
+                _context.LayawayPayments.RemoveRange(layawayPayments);
+                _context.LayawayRefundDetails.RemoveRange(layawayRefundDetails);
+                _context.LayawayRefundMasters.Remove(layawayRefundMaster);
 
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
                 return RedirectToAction(
                   actionName: "GetInvoiceMaster",
                   controllerName: "InvoiceMaster",
-                  routeValues: new { id = 54119 }
+                  routeValues: new { id = newInvoiceMasterId }
                   );
             }
             catch (Exception)
@@ -936,19 +955,31 @@ namespace TireInventory.Controllers
             }
         }
 
-        private void CreateInvoiceRefundMasterFromLayawayRefundMaster(long newInvoiceMasterId, LayawayRefundMaster layawayRefundMaster)
+        private long CreateInvoiceRefundMasterFromLayawayRefundMaster(long newInvoiceMasterId, LayawayRefundMaster layawayRefundMaster)
         {
             InvoiceRefundMaster irm = new InvoiceRefundMaster
             {
-                tbirm_InvoiceId = newInvoiceMasterId,
-                tbirm_RefundAmt = layawayRefundMaster.tbirm_RefundAmt,
-                tbirm_RefundDate = layawayRefundMaster.tbirm_RefundDate,
+                tbirm_InvoiceRefundIdRad = CommonFunctions.GenerateTransactionID(),
+                tbirm_InvRefundDate = layawayRefundMaster.tbirm_LayawayRefundDate,
                 tbirm_RefundType = layawayRefundMaster.tbirm_RefundType,
+                tbirm_InvoiceId = newInvoiceMasterId,
+                tbirm_SubTotal = layawayRefundMaster.tbirm_SubTotal,
+                tbirm_SaleTax = layawayRefundMaster.tbirm_SaleTax,
+                tbirm_Labour = layawayRefundMaster.tbirm_Labour,
+                tbirm_DisPer = layawayRefundMaster.tbirm_DisPer,
+                tbirm_DisAmt = layawayRefundMaster.tbirm_DisAmt,
+                tbirm_Total = layawayRefundMaster.tbirm_Total,
+                tbirm_RefundAmt = layawayRefundMaster.tbirm_RefundAmt,
+                tbirm_AdjAmt = layawayRefundMaster.tbirm_AdjAmt,
                 tbirm_Note = layawayRefundMaster.tbirm_Note,
+                tbirm_Delinfo = layawayRefundMaster.tbirm_Delinfo,
+                tbirm_Item_Delete_after_Invoice_Refund_Create = layawayRefundMaster.tbirm_Item_Delete_after_Layaway_Refund_Create,
                 UserName = layawayRefundMaster.UserName,
                 SetDate = DateTime.UtcNow // Set to current date/time
             };
             _context.InvoiceRefundMasters.Add(irm);
+            _context.SaveChanges();
+            return irm.Id;
         }
 
         private void CreateInvoiceRefundDetailsFromLayawayRefundDetails(long newInvoiceRefundMasterId, List<LayawayRefundDetails> layawayRefundDetails)
@@ -986,10 +1017,9 @@ namespace TireInventory.Controllers
                 InvoiceRefundPayments irp = new InvoiceRefundPayments
                 {
                     tbirp_InvoiceRefundId = newInvoiceRefundMasterId,
-                    tbirp_PaymentId = lrp.tbip_PaymentId,
-                    tbirp_PayAmt = lrp.tbip_PayAmt,
-                    tbirp_Date = lrp.tbip_Date,
-                    tbirp_PaymentType = lrp.tbip_PaymentType
+                    tbirp_RefundMethodId=lrp.tbirp_RefundMethodId,
+                    tbirp_RefundAmt=lrp.tbirp_RefundAmt,
+                    tbirp_Date=lrp.tbirp_Date
                 };
                 _context.InvoiceRefundPayments.Add(irp);
             }
