@@ -167,7 +167,9 @@ namespace TireInventory.Controllers
                 LastName = user.LastName ?? string.Empty,
                 IsActive = user.IsActive,
                 LocationId = user.LocationId,
-                LocationName = location?.tbld_LocationName ?? "Unknown Location", // Mapped field safely handling nulls
+                LocationName = location?.tbld_LocationName ?? "", // Mapped field safely handling nulls
+                tbld_Address1 = location?.tbld_Address1 ?? "", // Mapped field safely handling nulls
+                tbld_Address2 = location?.tbld_Address2 ?? "", // Mapped field safely handling nulls
                 Email = user.Email ?? string.Empty,
                 Roles = roles
             });
