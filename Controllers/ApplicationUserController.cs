@@ -83,6 +83,12 @@ namespace TireInventory.Controllers
             var locationsDict = allLocations
                 .Where(l => userLocationIds.Contains(l.Id))
                 .ToDictionary(l => l.Id, l => l.tbld_LocationName);
+            var locationsAddr1Dict = allLocations
+                .Where(l => userLocationIds.Contains(l.Id))
+                .ToDictionary(l => l.Id, l => l.tbld_Address1);
+            var locationsAddr2Dict = allLocations
+                .Where(l => userLocationIds.Contains(l.Id))
+                .ToDictionary(l => l.Id, l => l.tbld_Address2);
 
             var result = new List<IdentityUserDto>();
 
@@ -93,6 +99,8 @@ namespace TireInventory.Controllers
 
                 // Safely look up the location name from our in-memory dictionary
                 locationsDict.TryGetValue(u.LocationId, out var locationName);
+                locationsAddr1Dict.TryGetValue(u.LocationId, out var tbld_Address1);
+                locationsAddr2Dict.TryGetValue(u.LocationId, out var tbld_Address2);
 
                 result.Add(new IdentityUserDto
                 {
@@ -103,6 +111,8 @@ namespace TireInventory.Controllers
                     IsActive = u.IsActive,
                     LocationId = u.LocationId,
                     LocationName = locationName ?? "Unknown Location", // Mapped from database table
+                    tbld_Address1 = tbld_Address1 ?? "", // Mapped from database table
+                    tbld_Address2 = tbld_Address2 ?? "", // Mapped from database table
                     Email = u.Email ?? string.Empty,
                     Roles = roles
                 });

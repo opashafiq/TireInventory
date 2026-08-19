@@ -8,6 +8,9 @@
     <UserSecretsId>817d9dbc-4253-41da-a6f1-21ad29c953f2</UserSecretsId>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <DockerfileContext>.</DockerfileContext>
+    <!-- Basic Container Settings -->
+    <ContainerRegistry>192.168.95.181:5000</ContainerRegistry>
+    <ContainerImageName>tire-shop-app</ContainerImageName>
   </PropertyGroup>
 
   <ItemGroup>

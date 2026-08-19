@@ -832,8 +832,8 @@ namespace TireInventory.Controllers
                 _context.LayawayRefundMasters.Remove(layawayRefundMaster);
 
                 _context.LayawayPayments.RemoveRange(layawayPayments);
-                _context.LayawayRefundDetails.RemoveRange(layawayRefundDetails);
-                _context.LayawayRefundMasters.Remove(layawayRefundMaster);
+                _context.LayawayDetails.RemoveRange(layawayDetails);
+                _context.LayawayMasters.Remove(layawayMaster);
 
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();

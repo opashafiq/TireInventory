@@ -40,6 +40,8 @@ namespace TireInventory.Controllers
             return companyInfo;
         }
 
+
+
         // PUT: api/CompanyInfo/5
         [HttpPut("{id}")]
         public async Task<IActionResult> PutCompanyInfo(long id, CompanyInfo companyInfo)
