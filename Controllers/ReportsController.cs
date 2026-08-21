@@ -1,13 +1,14 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using TireInventory.Data;
+using TireInventory.Helpers;
 using TireInventory.Models;
 using TireInventory.Models.ReportDtos;
-using TireInventory.Helpers;
 
 namespace TireInventory.Controllers
 {
@@ -89,18 +90,42 @@ namespace TireInventory.Controllers
         /// Filters by tbim_InvDate using optional startDate and endDate query parameters.
         /// </summary>
         [HttpGet("GetCustomerList")]
-        public async Task<ActionResult<List<CustomersDto>>> GetCustomerList([FromQuery] DateTime? startDate = null, [FromQuery] DateTime? endDate = null)
+        public async Task<ActionResult<List<CustomersDto>>> GetCustomerList(
+            [FromQuery] DateTime? startDate = null, 
+            [FromQuery] DateTime? endDate = null
+            )
         {
-            var invoicesQuery = _context.InvoiceMasters
-                .AsNoTracking()
-                .Where(im => (!startDate.HasValue || im.tbim_InvDate >= startDate.Value) &&
-                             (!endDate.HasValue || im.tbim_InvDate <= endDate.Value))
+            // Start with a base, un-executed query
+            var queryInvoiceMaster = _context.InvoiceMasters.AsNoTracking();
+            var queryLayawayMaster = _context.LayawayMasters.AsNoTracking();
+
+            if (startDate.HasValue && endDate.HasValue)
+            {
+                queryInvoiceMaster = queryInvoiceMaster.Where(im => im.tbim_InvDate >= startDate.Value && im.tbim_InvDate <= endDate.Value);
+                queryLayawayMaster = queryLayawayMaster.Where(lm => lm.tbim_InvDate >= startDate.Value && lm.tbim_InvDate <= endDate.Value);
+            }
+            else if (startDate.HasValue)
+            {
+                queryInvoiceMaster = queryInvoiceMaster.Where(im => im.tbim_InvDate >= startDate.Value);
+                queryLayawayMaster = queryLayawayMaster.Where(lm => lm.tbim_InvDate >= startDate.Value);
+            }
+            else if (endDate.HasValue)
+            {
+                queryInvoiceMaster = queryInvoiceMaster.Where(im => im.tbim_InvDate <= endDate.Value);
+                queryLayawayMaster = queryLayawayMaster.Where(lm => lm.tbim_InvDate <= endDate.Value);
+            }
+            else
+            {
+                queryInvoiceMaster = queryInvoiceMaster.Take(1000); // Limit to 1000 if no date filters are provided
+                queryLayawayMaster = queryLayawayMaster.Take(1000); // Limit to 1000 if no date filters are provided
+            }
+
+
+            var invoicesQuery = queryInvoiceMaster
                 .Select(im => new { Name = im.tbim_Name, Email = im.tbim_EmailAddress, Phone = im.tbim_Phone });
 
-            var layawaysQuery = _context.LayawayMasters
-                .AsNoTracking()
-                .Where(l => (!startDate.HasValue || l.tbim_InvDate >= startDate.Value) &&
-                            (!endDate.HasValue || l.tbim_InvDate <= endDate.Value))
+
+            var layawaysQuery = queryLayawayMaster
                 .Select(l => new { Name = l.tbim_Name, Email = l.tbim_EmailAddress, Phone = l.tbim_Phone });
 
             var unionList = await invoicesQuery
@@ -128,19 +153,39 @@ namespace TireInventory.Controllers
         /// Only InvoiceDetails with tbid_DepartmentName == "New Tires" are included.
         /// Groups by department, size and brand and returns summed quantity.
         /// </summary>
-        [HttpGet("GetTireSellReport")]
-        public async Task<ActionResult<List<NewTireSaleDto>>> GetTireSellReport(
+        [HttpGet("GetTireSaleReport")]
+        public async Task<ActionResult<List<NewTireSaleDto>>> GetTireSaleReport(
             [FromQuery] DateTime? startDate = null,
             [FromQuery] DateTime? endDate = null,
             [FromQuery] string Brand = null,
-            [FromQuery] string Size = null,
-            [FromQuery] string Export = null)
+            [FromQuery] string Size = null)
         {
+            // Start with a base, un-executed query
+            var queryInvoiceMaster = _context.InvoiceMasters.AsNoTracking();
+
+            if (startDate.HasValue && endDate.HasValue)
+            {
+                queryInvoiceMaster = queryInvoiceMaster.Where(im => im.tbim_InvDate >= startDate.Value && im.tbim_InvDate <= endDate.Value);
+            }
+            else if (startDate.HasValue)
+            {
+                queryInvoiceMaster = queryInvoiceMaster.Where(im => im.tbim_InvDate >= startDate.Value);
+            }
+            else if (endDate.HasValue)
+            {
+                queryInvoiceMaster = queryInvoiceMaster.Where(im => im.tbim_InvDate <= endDate.Value);
+            }
+            else
+            {
+                if (Brand == null && Size == null)
+                {
+                    queryInvoiceMaster = queryInvoiceMaster.Take(1000); // Limit to 1000 if no date filters are provided
+                }
+            }
+
             var query = from det in _context.InvoiceDetails.AsNoTracking()
-                        join inv in _context.InvoiceMasters.AsNoTracking() on det.tbid_InvoiceId equals inv.Id
+                        join inv in queryInvoiceMaster on det.tbid_InvoiceId equals inv.Id
                         where det.tbid_DepartmentName == "New Tires"
-                              && (!startDate.HasValue || inv.tbim_InvDate >= startDate.Value)
-                              && (!endDate.HasValue || inv.tbim_InvDate <= endDate.Value)
                               && (string.IsNullOrEmpty(Brand) || det.tbid_Brand == Brand)
                               && (string.IsNullOrEmpty(Size) || det.tbid_Size == Size)
                         group det by new
@@ -171,7 +216,7 @@ namespace TireInventory.Controllers
         /// Groups by department, size, brand, series and bolt and returns summed quantity.
         /// </summary>
         [HttpGet("GetWheelSaleReport")]
-        public async Task<ActionResult<List<NewWheelsSale>>> GetWheelSaleReport(
+        public async Task<ActionResult<List<NewWheelsSaleDto>>> GetWheelSaleReport(
             [FromQuery] DateTime? startDate = null,
             [FromQuery] DateTime? endDate = null,
             [FromQuery] string Brand = null,
@@ -179,11 +224,32 @@ namespace TireInventory.Controllers
             [FromQuery] string Bolt = null,
             [FromQuery] string Series = null)
         {
+            // Start with a base, un-executed query
+            var queryInvoiceMaster = _context.InvoiceMasters.AsNoTracking();
+            if (startDate.HasValue && endDate.HasValue)
+            {
+                queryInvoiceMaster = queryInvoiceMaster.Where(im => im.tbim_InvDate >= startDate.Value && im.tbim_InvDate <= endDate.Value);
+            }
+            else if (startDate.HasValue)
+            {
+                queryInvoiceMaster = queryInvoiceMaster.Where(im => im.tbim_InvDate >= startDate.Value);
+            }
+            else if (endDate.HasValue)
+            {
+                queryInvoiceMaster = queryInvoiceMaster.Where(im => im.tbim_InvDate <= endDate.Value);
+            }
+            else
+            {
+                if (Brand == null && Size == null && Bolt == null && Series == null)
+                {
+                    queryInvoiceMaster = queryInvoiceMaster.Take(1000); // Limit to 1000 if no date filters are provided
+                }
+            }
+
+
             var query = from det in _context.InvoiceDetails.AsNoTracking()
-                        join inv in _context.InvoiceMasters.AsNoTracking() on det.tbid_InvoiceId equals inv.Id
+                        join inv in queryInvoiceMaster on det.tbid_InvoiceId equals inv.Id
                         where det.tbid_DepartmentName == "New Wheels"
-                              && (!startDate.HasValue || inv.tbim_InvDate >= startDate.Value)
-                              && (!endDate.HasValue || inv.tbim_InvDate <= endDate.Value)
                               && (string.IsNullOrEmpty(Brand) || det.tbid_Brand == Brand)
                               && (string.IsNullOrEmpty(Size) || det.tbid_Size == Size)
                               && (string.IsNullOrEmpty(Bolt) || det.tbid_Bolt == Bolt)
@@ -196,7 +262,7 @@ namespace TireInventory.Controllers
                             Series = det.tbid_Series ?? string.Empty,
                             Bolt = det.tbid_Bolt ?? string.Empty
                         } into g
-                        select new NewWheelsSale
+                        select new NewWheelsSaleDto
                         {
                             Category = g.Key.Category,
                             Size = g.Key.Size,
@@ -224,12 +290,32 @@ namespace TireInventory.Controllers
             [FromQuery] DateTime? endDate = null,
             [FromQuery] long? Category = null)
         {
+            // Start with a base, un-executed query
+            var queryInvoiceMaster = _context.InvoiceMasters.AsNoTracking();
+            if (startDate.HasValue && endDate.HasValue)
+            {
+                queryInvoiceMaster = queryInvoiceMaster.Where(im => im.tbim_InvDate >= startDate.Value && im.tbim_InvDate <= endDate.Value);
+            }
+            else if (startDate.HasValue)
+            {
+                queryInvoiceMaster = queryInvoiceMaster.Where(im => im.tbim_InvDate >= startDate.Value);
+            }
+            else if (endDate.HasValue)
+            {
+                queryInvoiceMaster = queryInvoiceMaster.Where(im => im.tbim_InvDate <= endDate.Value);
+            }
+            else
+            {
+                if (Category == null)
+                {
+                    queryInvoiceMaster = queryInvoiceMaster.Take(1000); // Limit to 1000 if no date filters are provided
+                }
+            }
+
             // Base grouped query following the stored procedure grouping
             var baseQuery = from sd in _context.InvoiceDetails.AsNoTracking()
-                            join sm in _context.InvoiceMasters.AsNoTracking() on sd.tbid_InvoiceId equals sm.Id
-                            where (!startDate.HasValue || sm.tbim_InvDate >= startDate.Value)
-                                  && (!endDate.HasValue || sm.tbim_InvDate <= endDate.Value)
-                                  && (!Category.HasValue || sd.tbid_ItemCategory == Category.Value)
+                            join sm in queryInvoiceMaster on sd.tbid_InvoiceId equals sm.Id
+                            where (!Category.HasValue || sd.tbid_ItemCategory == Category.Value)
                             group sd by new
                             {
                                 CategoryName = sd.tbid_DepartmentName ?? string.Empty,

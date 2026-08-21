@@ -1,6 +1,6 @@
 ﻿namespace TireInventory.Models.ReportDtos
 {
-    public class NewWheelsSale
+    public class NewWheelsSaleDto
     {
         public string Category { get; set; }
         public string Size { get; set; }
