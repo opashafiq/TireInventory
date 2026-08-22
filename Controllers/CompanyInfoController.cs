@@ -7,7 +7,7 @@ using TireInventory.Models;
 
 namespace TireInventory.Controllers
 {
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+   //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [Route("api/[controller]")]
     [ApiController]
     public class CompanyInfoController : ControllerBase
@@ -24,6 +24,33 @@ namespace TireInventory.Controllers
         public async Task<ActionResult<IEnumerable<CompanyInfo>>> GetCompanyInfo()
         {
             return await _context.CompanyInfos.ToListAsync();
+        }
+
+        // GET: api/CompanyInfoWOLogo
+        [HttpGet("WOLogo")]
+        public async Task<ActionResult<CompanyInfoWOLogo>> GetCompanyInfoWOLogo()
+        {
+            var dto = await _context.CompanyInfos
+                .Select(c => new CompanyInfoWOLogo
+                {
+                    Id = c.Id,
+                    tbbiBusinessName = c.tbbiBusinessName,
+                    tbbi_Address1 = c.tbbi_Address1,
+                    tbbi_Address2 = c.tbbi_Address2,
+                    tbbi_City = c.tbbi_City,
+                    tbbi_State = c.tbbi_State,
+                    tbbi_ZipCode = c.tbbi_ZipCode,
+                    tbbi_Country = c.tbbi_Country,
+                    tbbi_Phone = c.tbbi_Phone,
+                    tbbi_Fax = c.tbbi_Fax,
+                    tbbi_Email = c.tbbi_Email,
+                    UserName = c.UserName,
+                    SetDate = c.SetDate
+                })
+                .FirstOrDefaultAsync();
+
+            if (dto == null) return NotFound();
+            return dto;
         }
 
         // GET: api/CompanyInfo/5
