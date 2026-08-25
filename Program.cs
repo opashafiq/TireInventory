@@ -1,13 +1,14 @@
-using Microsoft.EntityFrameworkCore;
-using TireInventory.Data;
-using TireInventory.Models;
-using TireInventory;
-using TireInventory.Helpers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
-using Microsoft.AspNetCore.Identity;
+using TireInventory;
+using TireInventory.Data;
+using TireInventory.Helpers;
+using TireInventory.Models;
+using TireInventory.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,6 +25,9 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
 /////////////
 
 builder.Services.AddTransient<IJsonWebTokenService, JsonWebTokenService>();
+
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddMemoryCache();
 
 //// JWT Token Generation Symmetric Key and Services
 var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("this-is-signing-key this-is-signing-key this-is-signing-key")); // This should be the key given during token creation
