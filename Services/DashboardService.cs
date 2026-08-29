@@ -894,15 +894,15 @@ namespace TireInventory.Services
                 YearlySales = await GetYearlySalesAsync(5, f.LocationId, ct),
                 MonthlySales = await GetMonthlySalesAsync(12, f.LocationId, ct),
                 DailySales = await GetDailySalesAsync(f, ct),
-                TopProducts = await GetTopProductsByValueAsync(10, f, ct),
-                TopCustomers = await GetTopCustomersAsync(10, f, ct),
-                PaymentCollection = await GetCollectionByPaymentMethodAsync(f, ct),
-                SalesByDepartment = await GetSalesByDepartmentAsync(f, ct),
-                SalesByBrand = await GetSalesByBrandAsync(10, f, ct),
-                SalesByLocation = await GetSalesByLocationAsync(f, ct),
-                Inventory = await GetInventorySummaryAsync(f.LocationId, 4, ct),
-                TopOutstanding = await GetTopOutstandingInvoicesAsync(10, f, ct),
-                RecentInvoices = await GetRecentInvoicesAsync(10, f.LocationId, ct)
+                /*TopProducts = await GetTopProductsByValueAsync(10, f, ct),*/
+                //TopCustomers = await GetTopCustomersAsync(10, f, ct),
+                //PaymentCollection = await GetCollectionByPaymentMethodAsync(f, ct),
+                //SalesByDepartment = await GetSalesByDepartmentAsync(f, ct),
+                //SalesByBrand = await GetSalesByBrandAsync(10, f, ct),
+                //SalesByLocation = await GetSalesByLocationAsync(f, ct),
+                //Inventory = await GetInventorySummaryAsync(f.LocationId, 4, ct),
+                //TopOutstanding = await GetTopOutstandingInvoicesAsync(10, f, ct),
+                //RecentInvoices = await GetRecentInvoicesAsync(10, f.LocationId, ct)
             };
         }
     }

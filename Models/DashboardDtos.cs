@@ -28,6 +28,27 @@
             };
         }
 
+
+        /*
+         Valid `period` values, exactly these strings:
+
+            | Value | Label to display |
+            |---|---|
+            | `today` | Today |
+            | `yesterday` | Yesterday |
+            | `wtd` | This Week |
+            | `mtd` | This Month |
+            | `lastmonth` | Last Month |
+            | `ytd` | This Year |
+            | `lastyear` | Last Year |
+            | `last12m` | Last 12 Months |
+            | `custom` | Custom Range |
+
+            When `period=custom`, also send `&from=YYYY-MM-DD&to=YYYY-MM-DD` from a date-range picker. For all other values, do **not** send `from` or `to`.
+
+            Default on first load: `mtd`.
+         
+         */
         public static DashboardFilter Resolve(string? period, DateTime? from, DateTime? to, long? locationId)
         {
             var today = DateTime.Today;
