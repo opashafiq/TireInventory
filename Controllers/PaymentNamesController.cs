@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TireInventory.Data;
+using TireInventory.Helpers;
 using TireInventory.Models;
 
 namespace TireInventory.Controllers
@@ -90,8 +91,19 @@ namespace TireInventory.Controllers
                 return NotFound();
             }
 
-            _context.PaymentNames.Remove(paymentNames);
-            await _context.SaveChangesAsync();
+            try
+            {
+                _context.PaymentNames.Remove(paymentNames);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                if (ex.InnerException.Message.Contains("DELETE statement conflicted with the REFERENCE constraint"))
+                {
+                    return StatusCode(409, new { message = Messages.GetRefKeyErrorMessage("PaymentNames", ""), error = ex.InnerException?.Message ?? ex.Message });
+                }
+                return StatusCode(500, new { message = "An error occurred during deletion of payment names", error = ex.InnerException?.Message ?? ex.Message });
+            }
 
             return NoContent();
         }

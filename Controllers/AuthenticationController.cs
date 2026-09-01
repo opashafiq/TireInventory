@@ -143,13 +143,25 @@ namespace TireInventory.Controllers
                 return NotFound($"Role with ID {id} not found.");
             }
 
-            var result = await _roleManager.DeleteAsync(role);
-            if (result.Succeeded)
+            try
             {
-                return Ok(new { Message = "Role deleted successfully." });
-            }
+                var result = await _roleManager.DeleteAsync(role);
+                if (result.Succeeded)
+                {
+                    return Ok(new { Message = "Role deleted successfully." });
+                }
 
-            return BadRequest(result.Errors);
+                return BadRequest(result.Errors);
+            }
+            catch (Exception ex)
+            {
+                if (ex.InnerException != null && ex.InnerException.Message.Contains("DELETE statement conflicted with the REFERENCE constraint"))
+                {
+                    return StatusCode(409, new { message = Messages.GetRefKeyErrorMessage("Role", ""), error = ex.InnerException?.Message ?? ex.Message });
+                }
+
+                return StatusCode(500, new { message = "An error occurred during deletion of role", error = ex.InnerException?.Message ?? ex.Message });
+            }
         }
         #endregion
     }

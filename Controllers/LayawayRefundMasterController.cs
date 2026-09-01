@@ -270,8 +270,19 @@ namespace TireInventory.Controllers
             var layawayRefundMaster = await _context.LayawayRefundMasters.FindAsync(id);
             if (layawayRefundMaster == null) return NotFound();
 
-            _context.LayawayRefundMasters.Remove(layawayRefundMaster);
-            await _context.SaveChangesAsync();
+            try
+            {
+                _context.LayawayRefundMasters.Remove(layawayRefundMaster);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                if (ex.InnerException.Message.Contains("DELETE statement conflicted with the REFERENCE constraint"))
+                {
+                    return StatusCode(409, new { message = Messages.GetRefKeyErrorMessage("LayawayRefundMaster", ""), error = ex.InnerException?.Message ?? ex.Message });
+                }
+                return StatusCode(500, new { message = "An error occurred during deletion of layaway refund master", error = ex.InnerException?.Message ?? ex.Message });
+            }
 
             return NoContent();
         }

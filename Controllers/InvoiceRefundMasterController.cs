@@ -276,8 +276,19 @@ namespace TireInventory.Controllers
                 return NotFound();
             }
 
-            _context.InvoiceRefundMasters.Remove(invoiceRefundMaster);
-            await _context.SaveChangesAsync();
+            try
+            {
+                _context.InvoiceRefundMasters.Remove(invoiceRefundMaster);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                if (ex.InnerException.Message.Contains("DELETE statement conflicted with the REFERENCE constraint"))
+                {
+                    return StatusCode(409, new { message = Messages.GetRefKeyErrorMessage("InvoiceRefundMaster", ""), error = ex.InnerException?.Message ?? ex.Message });
+                }
+                return StatusCode(500, new { message = "An error occurred during deletion of invoice refund master", error = ex.InnerException?.Message ?? ex.Message });
+            }
 
             return NoContent();
         }

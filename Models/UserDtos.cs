@@ -41,4 +41,11 @@ namespace TireInventory.Models
         // Use a concrete collection type and initialize to avoid reflection/serialization issues
         public List<string> Roles { get; set; } = new List<string>();
     }
+
+    public class ChangePasswordDto
+    {
+        public string UserId { get; set; } = string.Empty;
+        public string CurrentPassword { get; set; } = string.Empty;
+        public string NewPassword { get; set; } = string.Empty;
+    }
 }

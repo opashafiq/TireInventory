@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TireInventory.Data;
+using TireInventory.Helpers;
 using TireInventory.Models;
 
 namespace TireInventory.Controllers
@@ -314,6 +315,22 @@ namespace TireInventory.Controllers
             return NoContent();
         }
 
+        // POST: api/ApplicationUser/changepassword
+        [HttpPost("changepassword")]
+        public async Task<IActionResult> ChangePassword(ChangePasswordDto dto)
+        {
+            if (dto == null) return BadRequest();
+
+            var user = await _userManager.FindByIdAsync(dto.UserId);
+            if (user == null) return NotFound();
+
+            // Use UserManager.ChangePasswordAsync which validates current password and applies password rules
+            var result = await _userManager.ChangePasswordAsync(user, dto.CurrentPassword, dto.NewPassword);
+            if (!result.Succeeded) return BadRequest(result.Errors);
+
+            return NoContent();
+        }
+
         // DELETE: api/ApplicationUser/{id}
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUser(string id)
@@ -321,8 +338,19 @@ namespace TireInventory.Controllers
             var user = await _userManager.FindByIdAsync(id);
             if (user == null) return NotFound();
 
-            var deleteResult = await _userManager.DeleteAsync(user);
-            if (!deleteResult.Succeeded) return BadRequest(deleteResult.Errors);
+            try
+            {
+                var deleteResult = await _userManager.DeleteAsync(user);
+                if (!deleteResult.Succeeded) return BadRequest(deleteResult.Errors);
+            }
+            catch (Exception ex)
+            {
+                if (ex.InnerException != null && ex.InnerException.Message.Contains("DELETE statement conflicted with the REFERENCE constraint"))
+                {
+                    return StatusCode(409, new { message = Messages.GetRefKeyErrorMessage("ApplicationUser", ""), error = ex.InnerException?.Message ?? ex.Message });
+                }
+                return StatusCode(500, new { message = "An error occurred during deletion of user", error = ex.InnerException?.Message ?? ex.Message });
+            }
 
             return NoContent();
         }

@@ -429,7 +429,7 @@ namespace TireInventory.Services
         {
             if (top <= 0) top = 10;
 
-            // InvoiceDetails already carries brand/size/series/department snapshots,
+            // 1. InvoiceDetails already carries brand/size/series/department snapshots,
             // so no join to ItemMaster is needed for the chart itself.
             var q = Lines(f)
                 .GroupBy(d => new
@@ -457,22 +457,40 @@ namespace TireInventory.Services
 
             var rows = await q.Take(top).ToListAsync(ct);
 
-            // Period total for share %, computed server-side over the whole period.
+            if (rows.Count == 0) return rows;
+
+            // 2. Period total for share %, computed server-side over the whole period.
             var periodRevenue = await Lines(f).SumAsync(d => (decimal?)d.tbid_LineTotal, ct) ?? 0m;
 
-            // Attach live stock so the chart can flag "top seller, nearly out".
-            var itemIds = rows.Where(r => r.ItemId.HasValue).Select(r => r.ItemId!.Value).ToList();
-            var stock = itemIds.Count == 0
-                ? new Dictionary<long, int>()
-                : await _context.ItemMasters.AsNoTracking()
-                    .Where(i => itemIds.Contains(i.Id))
-                    .Select(i => new { i.Id, i.tbim_Qty })
-                    .ToDictionaryAsync(x => x.Id, x => x.tbim_Qty, ct);
+            // 3. Attach live stock using raw SQL with explicit semicolon termination
+            var itemIds = rows
+                .Where(r => r.ItemId.HasValue)
+                .Select(r => r.ItemId!.Value)
+                .Distinct()
+                .ToList();
 
+            var stock = new Dictionary<long, int>();
+            if (itemIds.Count > 0)
+            {
+                // Generate comma-separated parameters dynamically or use string formatting safely for IN clause
+                var idList = string.Join(",", itemIds);
+
+                // Explicitly ending with a semicolon prevents the parser error
+                var stockItems = await _context.ItemMasters
+                    .FromSqlRaw($"SELECT * FROM tbl_ItemMaster WHERE Id IN ({idList})")
+                    .AsNoTracking()
+                    .Select(i => new { i.Id, Qty = i.tbim_Qty })
+                    .ToListAsync(ct);
+
+                stock = stockItems.ToDictionary(x => x.Id, x => x.Qty);
+            }
+
+            // 4. Populate formatted fields, share percentage, and live stock values
             foreach (var r in rows)
             {
                 r.Description = string.Join(" ", new[] { r.Brand, r.Size, r.Series }
                     .Where(s => !string.IsNullOrWhiteSpace(s)));
+
                 if (string.IsNullOrWhiteSpace(r.Description))
                     r.Description = r.Department ?? $"Item #{r.ItemId}";
 
@@ -621,23 +639,56 @@ namespace TireInventory.Services
 
             if (inPeriod.Count == 0) return new CustomerMixDto();
 
-            var phones = inPeriod.Select(x => x.Phone).ToList();
+            var phones = inPeriod
+                .Where(x => !string.IsNullOrEmpty(x.Phone))
+                .Select(x => x.Phone!)
+                .Distinct()
+                .ToList();
 
-            // First-ever invoice date per customer, restricted to that phone set.
-            // For very large customer bases, replace this with a persisted
-            // "CustomerFirstPurchase" table refreshed nightly.
-            var firstSeen = await _context.InvoiceMasters.AsNoTracking()
-                .Where(i => phones.Contains(i.tbim_Phone))
-                .GroupBy(i => i.tbim_Phone)
-                .Select(g => new { Phone = g.Key, First = g.Min(x => x.tbim_InvDate) })
-                .ToDictionaryAsync(x => x.Phone, x => x.First, ct);
+            var firstSeen = new Dictionary<string, DateTime>();
+
+            if (phones.Count > 0)
+            {
+                // -------------------------------------------------------------
+                // FIX: Formats phone strings for SQL IN clause & appends an 
+                // explicit trailing semicolon ';' to prevent the 'WITH' CTE error
+                // -------------------------------------------------------------
+                var phoneList = string.Join(",", phones.Select(p => $"'{p.Replace("'", "''")}'"));
+
+                var firstSeenItems = await _context.InvoiceMasters
+                    .FromSqlRaw($"SELECT * FROM tbl_Invoice_Master WHERE tbim_Phone IN ({phoneList})")
+                    .AsNoTracking()
+                    .Where(i => !string.IsNullOrEmpty(i.tbim_Phone))
+                    .GroupBy(i => i.tbim_Phone!)
+                    .Select(g => new
+                    {
+                        Phone = g.Key,
+                        First = g.Min(x => (DateTime?)x.tbim_InvDate)
+                    })
+                    .ToListAsync(ct);
+
+                firstSeen = firstSeenItems
+                    .Where(x => x.First.HasValue)
+                    .ToDictionary(x => x.Phone, x => x.First!.Value);
+            }
 
             var mix = new CustomerMixDto();
             foreach (var c in inPeriod)
             {
-                var isNew = firstSeen.TryGetValue(c.Phone, out var first) && first >= f.From;
-                if (isNew) { mix.NewCustomers++; mix.NewCustomerRevenue += c.Revenue; }
-                else { mix.ReturningCustomers++; mix.ReturningCustomerRevenue += c.Revenue; }
+                var isNew = c.Phone != null
+                    && firstSeen.TryGetValue(c.Phone, out var first)
+                    && first >= f.From;
+
+                if (isNew)
+                {
+                    mix.NewCustomers++;
+                    mix.NewCustomerRevenue += c.Revenue;
+                }
+                else
+                {
+                    mix.ReturningCustomers++;
+                    mix.ReturningCustomerRevenue += c.Revenue;
+                }
             }
 
             return mix;
@@ -699,18 +750,34 @@ namespace TireInventory.Services
                 .OrderByDescending(x => x.Value)
                 .ToListAsync(ct);
 
-            var ids = rows.Where(r => r.Id.HasValue).Select(r => r.Id!.Value).ToList();
+            if (rows.Count == 0) return rows;
+
+            var ids = rows
+                .Where(r => r.Id.HasValue)
+                .Select(r => r.Id!.Value)
+                .Distinct()
+                .ToList();
+
             if (ids.Count > 0)
             {
-                // TODO: LocationDetails model was not supplied — replace "l.Name"
-                // with the actual display-name column (e.g. tbld_LocationName).
-                var names = await _context.LocationDetails.AsNoTracking()
-                    .Where(l => ids.Contains(l.Id))
+                // -------------------------------------------------------------
+                // FIX: Executes raw SQL with an explicit trailing semicolon ';' 
+                // to terminate SQL batch parser state and bypass the 'WITH' error
+                // -------------------------------------------------------------
+                var idList = string.Join(",", ids);
+
+                var locationItems = await _context.LocationDetails
+                    .FromSqlRaw($"SELECT * FROM tbl_BO_LocationDetails WHERE Id IN ({idList})")
+                    .AsNoTracking()
                     .Select(l => new { l.Id, l.tbld_LocationName })
-                    .ToDictionaryAsync(x => x.Id, x => x.tbld_LocationName, ct);
+                    .ToListAsync(ct);
+
+                var names = locationItems.ToDictionary(x => x.Id, x => x.tbld_LocationName);
 
                 foreach (var r in rows)
+                {
                     r.Name = r.Id.HasValue && names.TryGetValue(r.Id.Value, out var n) ? n : "Unassigned";
+                }
             }
 
             ApplyShares(rows);
@@ -858,15 +925,30 @@ namespace TireInventory.Services
                 })
                 .ToListAsync(ct);
 
-            // Attach the genuine last-sold date for the shortlist only (cheap second hop).
-            var ids = rows.Select(r => r.ItemId).ToList();
+            if (rows.Count == 0) return rows;
+
+            // Attach genuine last-sold date using raw SQL with explicit semicolon termination
+            var ids = rows.Select(r => r.ItemId).Distinct().ToList();
             if (ids.Count > 0)
             {
-                var lastSold = await _context.InvoiceDetails.AsNoTracking()
-                    .Where(d => d.tbid_ItemId != null && ids.Contains(d.tbid_ItemId.Value))
+                var idList = string.Join(",", ids);
+
+                var lastSoldItems = await _context.InvoiceDetails
+                    .FromSqlRaw($"SELECT * FROM tbl_Invoice_Details WHERE tbid_ItemId IN ({idList})")
+                    .AsNoTracking()
+                    .Where(d => d.tbid_ItemId != null)
                     .GroupBy(d => d.tbid_ItemId!.Value)
-                    .Select(g => new { ItemId = g.Key, Last = g.Max(x => x.tbid_Invoice!.tbim_InvDate) })
-                    .ToDictionaryAsync(x => x.ItemId, x => x.Last, ct);
+                    .Select(g => new
+                    {
+                        ItemId = g.Key,
+                        // Cast to DateTime? so null checking works safely across EF Core translation
+                        Last = g.Max(x => (DateTime?)x.tbid_Invoice!.tbim_InvDate)
+                    })
+                    .ToListAsync(ct);
+
+                var lastSold = lastSoldItems
+                    .Where(x => x.Last.HasValue)
+                    .ToDictionary(x => x.ItemId, x => x.Last!.Value);
 
                 foreach (var r in rows)
                 {
@@ -894,15 +976,16 @@ namespace TireInventory.Services
                 YearlySales = await GetYearlySalesAsync(5, f.LocationId, ct),
                 MonthlySales = await GetMonthlySalesAsync(12, f.LocationId, ct),
                 DailySales = await GetDailySalesAsync(f, ct),
-                /*TopProducts = await GetTopProductsByValueAsync(10, f, ct),*/
-                //TopCustomers = await GetTopCustomersAsync(10, f, ct),
-                //PaymentCollection = await GetCollectionByPaymentMethodAsync(f, ct),
-                //SalesByDepartment = await GetSalesByDepartmentAsync(f, ct),
-                //SalesByBrand = await GetSalesByBrandAsync(10, f, ct),
-                //SalesByLocation = await GetSalesByLocationAsync(f, ct),
-                //Inventory = await GetInventorySummaryAsync(f.LocationId, 4, ct),
-                //TopOutstanding = await GetTopOutstandingInvoicesAsync(10, f, ct),
-                //RecentInvoices = await GetRecentInvoicesAsync(10, f.LocationId, ct)
+                TopProducts = await GetTopProductsByValueAsync(10, f, ct),
+                //
+                TopCustomers = await GetTopCustomersAsync(10, f, ct),
+                PaymentCollection = await GetCollectionByPaymentMethodAsync(f, ct),
+                SalesByDepartment = await GetSalesByDepartmentAsync(f, ct),
+                SalesByBrand = await GetSalesByBrandAsync(10, f, ct),
+                SalesByLocation = await GetSalesByLocationAsync(f, ct),
+                Inventory = await GetInventorySummaryAsync(f.LocationId, 4, ct),
+                TopOutstanding = await GetTopOutstandingInvoicesAsync(10, f, ct),
+                RecentInvoices = await GetRecentInvoicesAsync(10, f.LocationId, ct)
             };
         }
     }
