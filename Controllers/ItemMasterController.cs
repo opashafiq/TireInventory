@@ -23,13 +23,11 @@ namespace TireInventory.Controllers
 
         // GET: api/ItemMaster
         [HttpGet]
-        //public async Task<ActionResult<IEnumerable<ItemMaster>>> GetItemMasters()
-        //{
-        //    return await _context.ItemMasters.ToListAsync();
-        //}
-
         public async Task<ActionResult<IEnumerable<ItemMasterDto>>> GetItemMasters()
         {
+            var thrashDept = await _context.Departments.FirstOrDefaultAsync(d => d.Tbid_DepartmentName == "Trash");
+            var thrashDeptId = thrashDept?.Id;
+
             var list = await (from im in _context.ItemMasters
                               join dep in _context.Departments
                                   on im.tbim_ItemCategoryId equals dep.Id
@@ -37,6 +35,51 @@ namespace TireInventory.Controllers
                                     on im.tbim_DistributorId equals dis.Id
                               join loc in _context.LocationDetails
                                     on im.tbim_LocationId equals loc.Id
+                                    where thrashDeptId != null && im.tbim_ItemCategoryId != thrashDeptId
+                              select new ItemMasterDto
+                              {
+                                  Id = im.Id,
+                                  tbim_ItemCategoryId = im.tbim_ItemCategoryId,
+                                  tbim_Size = im.tbim_Size,
+                                  tbim_Brand = im.tbim_Brand,
+                                  tbim_Series = im.tbim_Series,
+                                  tbim_Bolt = im.tbim_Bolt,
+                                  tbim_HoleS = im.tbim_HoleS,
+                                  tbim_Zone = im.tbim_Zone,
+                                  tbim_Qty = im.tbim_Qty,
+                                  tbim_QtyOp = im.tbim_QtyOp,
+                                  tbim_Code = im.tbim_Code,
+                                  tbim_CodeTOT = im.tbim_CodeTOT,
+                                  tbim_DistributorId = im.tbim_DistributorId,
+                                  tbim_OURP = im.tbim_OURP,
+                                  tbim_LocationId = im.tbim_LocationId,
+                                  DepartmentName = dep.Tbid_DepartmentName,
+                                  DistributorName = dis.Name,
+                                  LocationName = loc.tbld_LocationName,
+                                  tbim_ThrashDate = im.tbim_ThrashDate,
+                                  UserName = im.UserName,
+                                  SetDate = im.SetDate
+
+                              })
+                             .ToListAsync();
+
+            return Ok(list);
+        }
+
+        [HttpGet("get-trash-items")]
+        public async Task<ActionResult<IEnumerable<ItemMasterDto>>> GetTrashItems()
+        {
+            var thrashDept = await _context.Departments.FirstOrDefaultAsync(d => d.Tbid_DepartmentName == "Trash");
+            var thrashDeptId = thrashDept?.Id;
+
+            var list = await (from im in _context.ItemMasters
+                              join dep in _context.Departments
+                                  on im.tbim_ItemCategoryId equals dep.Id
+                              join dis in _context.Distributors
+                                    on im.tbim_DistributorId equals dis.Id
+                              join loc in _context.LocationDetails
+                                    on im.tbim_LocationId equals loc.Id
+                                    where thrashDeptId != null && im.tbim_ItemCategoryId == thrashDeptId
                               select new ItemMasterDto
                               {
                                   Id = im.Id,
@@ -71,6 +114,10 @@ namespace TireInventory.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<ItemMasterDto>> GetItemMaster(long id)
         {
+            // Pre-fetch the Thrash department Id to avoid null-propagation in the expression tree
+            var thrashDept = await _context.Departments.FirstOrDefaultAsync(d => d.Tbid_DepartmentName == "Thrash");
+            var thrashDeptId = thrashDept?.Id;
+
             var dto = await (from im in _context.ItemMasters
                              join dep in _context.Departments
                                  on im.tbim_ItemCategoryId equals dep.Id
@@ -78,7 +125,7 @@ namespace TireInventory.Controllers
                                    on im.tbim_DistributorId equals dis.Id
                              join loc in _context.LocationDetails
                                    on im.tbim_LocationId equals loc.Id
-                             where im.Id == id
+                             where im.Id == id && (thrashDeptId == null || im.tbim_ItemCategoryId != thrashDeptId)
                              select new ItemMasterDto
                              {
                                  Id = im.Id,
@@ -193,6 +240,24 @@ namespace TireInventory.Controllers
             return await GetItemMaster(itemMaster.Id);
             //return CreatedAtAction("GetItemMaster", new { id = itemMaster.Id }, itemMaster);
         }
+        // POST: api/ItemMaster
+        [HttpPost("move-to-thrash/{id}")]
+        public async Task<ActionResult<ItemMasterDto>> MoveToThrash(long id)
+        {
+            var itemMaster = await _context.ItemMasters.FindAsync(id);
+            if (itemMaster == null)
+            {
+                return NotFound();
+            }
+
+            itemMaster.tbim_ItemCategoryId=_context.Departments.FirstOrDefault(d => d.Tbid_DepartmentName == "Thrash")?.Id ?? itemMaster.tbim_ItemCategoryId;
+
+
+            await _context.SaveChangesAsync();
+
+            return await GetItemMaster(itemMaster.Id);
+            //return CreatedAtAction("GetItemMaster", new { id = itemMaster.Id }, itemMaster);
+        }
 
         // DELETE: api/ItemMaster/5
         [HttpDelete("{id}")]
@@ -206,6 +271,8 @@ namespace TireInventory.Controllers
 
             try
             {
+                // Update references in other tables before deleting the ItemMaster
+                UpdateItemMasterReferencesForDelete(id);
                 _context.ItemMasters.Remove(itemMaster);
                 await _context.SaveChangesAsync();
             }
@@ -602,6 +669,24 @@ namespace TireInventory.Controllers
         private bool ItemMasterExists(long id)
         {
             return _context.ItemMasters.Any(e => e.Id == id);
+        }
+
+        private void UpdateItemMasterReferencesForDelete(long itemMasterId)
+        {
+            // Update references in other tables before deleting the ItemMaster
+            var relatedRecordsInvoice = _context.InvoiceDetails.Where(r => r.tbid_ItemId == itemMasterId).ToList();
+            var relatedRecordsLayaway = _context.LayawayDetails.Where(r => r.tbid_ItemId == itemMasterId).ToList();
+            foreach (var record in relatedRecordsInvoice)
+            {
+                // Set foreign key to null or handle as needed
+                record.tbid_ItemId = null;
+            }
+            foreach (var record in relatedRecordsLayaway)
+            {
+                // Set foreign key to null or handle as needed
+                record.tbid_ItemId = null;
+            }
+            _context.SaveChanges();
         }
     }
 }
