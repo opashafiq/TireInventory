@@ -250,7 +250,7 @@ namespace TireInventory.Controllers
                 return NotFound();
             }
 
-            itemMaster.tbim_ItemCategoryId=_context.Departments.FirstOrDefault(d => d.Tbid_DepartmentName == "Thrash")?.Id ?? itemMaster.tbim_ItemCategoryId;
+            itemMaster.tbim_ItemCategoryId=_context.Departments.FirstOrDefault(d => d.Tbid_DepartmentName == "Trash")?.Id ?? itemMaster.tbim_ItemCategoryId;
 
 
             await _context.SaveChangesAsync();
