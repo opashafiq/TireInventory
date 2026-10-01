@@ -94,7 +94,11 @@ builder.Services.AddCors(options =>
         policy =>
         {
             policy
-                .WithOrigins("http://localhost:3000")
+                .WithOrigins(
+                    "http://localhost:3000",
+                    "https://www.tireinvfe.com",
+                    "http://www.tireinvfe.com"
+                )
                 .AllowAnyHeader()
                 .AllowAnyMethod();
         });
@@ -106,14 +110,14 @@ builder.Services.AddEndpointsApiExplorer();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
+//if (app.Environment.IsDevelopment())
+//{
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "MyAPI v1");
     });
-}
+//}
 
 app.UseHttpsRedirection();
 

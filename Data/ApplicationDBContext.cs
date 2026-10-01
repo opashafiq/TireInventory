@@ -39,6 +39,10 @@ namespace TireInventory.Data
         public DbSet<LayawayRefundPayments> LayawayRefundPayments { get; set; }
         public DbSet<DailyExpense> DailyExpenses { get; set; }
 
+        // Audit tables
+        public DbSet<AuditLog> AuditLogs { get; set; }
+        public DbSet<AuditTrail> AuditTrails { get; set; }
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
