@@ -31,49 +31,49 @@ namespace TireInventory.Models
         // A short, human-friendly name for the event (eg: "Update Department")
         [Required]
         [MaxLength(200)]
-        public string Event { get; set; }
+        public string? Event { get; set; }
 
         [Required]
         public AuditEventType EventType { get; set; }
 
         // The affected entity/table name (eg: "Departments")
         [MaxLength(200)]
-        public string EntityName { get; set; }
+        public string? EntityName { get; set; }
 
         // The primary key or identifier for the affected entity. Keep as string to allow composite keys or JSON.
         [MaxLength(200)]
-        public string EntityId { get; set; }
+        public string? EntityId { get; set; }
 
         // JSON payload describing the changed properties. Example: [{ "Property": "Name", "Old": "A", "New": "B" }]
-        public string Changes { get; set; }
+        public string? Changes { get; set; }
 
         // Optional free-form description or message about the event
-        public string Description { get; set; }
+        public string? Description { get; set; }
 
         // Who performed the action. Keep as string to support usernames or GUIDs from different identity providers.
         [MaxLength(200)]
-        public string PerformedById { get; set; }
+        public string? PerformedById { get; set; }
 
         [MaxLength(200)]
-        public string PerformedByName { get; set; }
+        public string? PerformedByName { get; set; }
 
         // UTC timestamp when the event occurred
         public DateTimeOffset PerformedAt { get; set; }
 
         // Request metadata
         [MaxLength(100)]
-        public string IpAddress { get; set; }
+        public string? IpAddress { get; set; }
 
-        public string UserAgent { get; set; }
+        public string? UserAgent { get; set; }
 
         [MaxLength(100)]
-        public string CorrelationId { get; set; }
+        public string? CorrelationId { get; set; }
 
         // Indicates success/failure of the operation (useful for login attempts etc.)
         public bool IsSuccess { get; set; }
 
         // Additional structured metadata (JSON) for extensibility
-        public string Metadata { get; set; }
+        public string? Metadata { get; set; }
 
         public AuditTrail()
         {
