@@ -7,6 +7,7 @@ using System.Text.Json;
 using TireInventory.Data;
 using TireInventory.Helpers;
 using TireInventory.Models;
+using TireInventory.Services;
 
 namespace TireInventory.Controllers
 {
@@ -16,10 +17,12 @@ namespace TireInventory.Controllers
     public class DailyExpenseController : ControllerBase
     {
         private readonly ApplicationDBContext _context;
+        private readonly IAuditService _auditService;
 
-        public DailyExpenseController(ApplicationDBContext context)
+        public DailyExpenseController(ApplicationDBContext context, IAuditService auditService)
         {
             _context = context;
+            _auditService = auditService;
         }
 
         // GET: api/DailyExpense
@@ -100,33 +103,26 @@ namespace TireInventory.Controllers
             {
                 await _context.SaveChangesAsync();
 
-                // Create audit trail entry
-                var audit = new AuditTrail
-                {
-                    Event = "Update DailyExpense",
-                    EventType = AuditEventType.Update,
-                    EntityName = "DailyExpense",
-                    EntityId = dailyExpense.Id.ToString(),
-                    Changes = JsonSerializer.Serialize(new { Old = original, New = dailyExpense }),
-                    Description = $"Updated DailyExpense Id={dailyExpense.Id}",
-                    IsSuccess = true,
-                    Metadata = JsonSerializer.Serialize(new
-                    {
-                        ExpenseHeadId = dailyExpense.ExpenseHeadId,
-                        Amount = dailyExpense.Amount,
-                        ExpenseDate = dailyExpense.ExpenseDate,
-                        LocationDetailsId = dailyExpense.LocationDetailsId,
-                        RequestPath = Request.Path,
-                        CorrelationId = Request.Headers["X-Correlation-ID"].ToString()
-                    }),
-                    PerformedByName = dailyExpense.UserName ?? original.UserName,
-                    PerformedById = dailyExpense.UserName ?? original.UserName,
-                    IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
-                    UserAgent = Request.Headers["User-Agent"].ToString()
-                };
-
-                _context.AuditTrails.Add(audit);
-                await _context.SaveChangesAsync();
+                // Log audit via centralized audit service
+                await _auditService.LogAsync(HttpContext,
+                                             "Update DailyExpense",
+                                             AuditEventType.Update,
+                                             "DailyExpense",
+                                             dailyExpense.Id.ToString(),
+                                             new { Old = original, New = dailyExpense },
+                                             $"Updated DailyExpense Id={dailyExpense.Id}",
+                                             new
+                                             {
+                                                 ExpenseHeadId = dailyExpense.ExpenseHeadId,
+                                                 Amount = dailyExpense.Amount,
+                                                 ExpenseDate = dailyExpense.ExpenseDate,
+                                                 LocationDetailsId = dailyExpense.LocationDetailsId,
+                                                 RequestPath = Request.Path,
+                                                 CorrelationId = Request.Headers["X-Correlation-ID"].ToString()
+                                             },
+                                             dailyExpense.UserName ?? original.UserName,
+                                             dailyExpense.UserName ?? original.UserName,
+                                             true);
             }
             catch (DbUpdateConcurrencyException)
             {
@@ -150,33 +146,25 @@ namespace TireInventory.Controllers
             _context.DailyExpenses.Add(dailyExpense);
             await _context.SaveChangesAsync();
 
-            // Audit - create
-            var auditCreate = new AuditTrail
-            {
-                Event = "Create DailyExpense",
-                EventType = AuditEventType.Create,
-                EntityName = "DailyExpense",
-                EntityId = dailyExpense.Id.ToString(),
-                Changes = JsonSerializer.Serialize(new { New = dailyExpense }),
-                Description = $"Created DailyExpense Id={dailyExpense.Id}",
-                IsSuccess = true,
-                Metadata = JsonSerializer.Serialize(new
-                {
-                    ExpenseHeadId = dailyExpense.ExpenseHeadId,
-                    Amount = dailyExpense.Amount,
-                    ExpenseDate = dailyExpense.ExpenseDate,
-                    LocationDetailsId = dailyExpense.LocationDetailsId,
-                    RequestPath = Request.Path,
-                    CorrelationId = Request.Headers["X-Correlation-ID"].ToString()
-                }),
-                PerformedByName = dailyExpense.UserName,
-                PerformedById = dailyExpense.UserName,
-                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
-                UserAgent = Request.Headers["User-Agent"].ToString()
-            };
-
-            _context.AuditTrails.Add(auditCreate);
-            await _context.SaveChangesAsync();
+            await _auditService.LogAsync(HttpContext,
+                                         "Create DailyExpense",
+                                         AuditEventType.Create,
+                                         "DailyExpense",
+                                         dailyExpense.Id.ToString(),
+                                         new { New = dailyExpense },
+                                         $"Created DailyExpense Id={dailyExpense.Id}",
+                                         new
+                                         {
+                                             ExpenseHeadId = dailyExpense.ExpenseHeadId,
+                                             Amount = dailyExpense.Amount,
+                                             ExpenseDate = dailyExpense.ExpenseDate,
+                                             LocationDetailsId = dailyExpense.LocationDetailsId,
+                                             RequestPath = Request.Path,
+                                             CorrelationId = Request.Headers["X-Correlation-ID"].ToString()
+                                         },
+                                         dailyExpense.UserName,
+                                         dailyExpense.UserName,
+                                         true);
 
             return await GetDailyExpense(dailyExpense.Id);
         }
@@ -193,36 +181,28 @@ namespace TireInventory.Controllers
 
             try
             {
-                // capture for audit
-                var auditDelete = new AuditTrail
-                {
-                    Event = "Delete DailyExpense",
-                    EventType = AuditEventType.Delete,
-                    EntityName = "DailyExpense",
-                    EntityId = dailyExpense.Id.ToString(),
-                    Changes = JsonSerializer.Serialize(new { Old = dailyExpense }),
-                    Description = $"Deleted DailyExpense Id={dailyExpense.Id}",
-                    IsSuccess = true,
-                    Metadata = JsonSerializer.Serialize(new
-                    {
-                        ExpenseHeadId = dailyExpense.ExpenseHeadId,
-                        Amount = dailyExpense.Amount,
-                        ExpenseDate = dailyExpense.ExpenseDate,
-                        LocationDetailsId = dailyExpense.LocationDetailsId,
-                        RequestPath = Request.Path,
-                        CorrelationId = Request.Headers["X-Correlation-ID"].ToString()
-                    }),
-                    PerformedByName = dailyExpense.UserName,
-                    PerformedById = dailyExpense.UserName,
-                    IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
-                    UserAgent = Request.Headers["User-Agent"].ToString()
-                };
-
                 _context.DailyExpenses.Remove(dailyExpense);
                 await _context.SaveChangesAsync();
 
-                _context.AuditTrails.Add(auditDelete);
-                await _context.SaveChangesAsync();
+                await _auditService.LogAsync(HttpContext,
+                                             "Delete DailyExpense",
+                                             AuditEventType.Delete,
+                                             "DailyExpense",
+                                             dailyExpense.Id.ToString(),
+                                             new { Old = dailyExpense },
+                                             $"Deleted DailyExpense Id={dailyExpense.Id}",
+                                             new
+                                             {
+                                                 ExpenseHeadId = dailyExpense.ExpenseHeadId,
+                                                 Amount = dailyExpense.Amount,
+                                                 ExpenseDate = dailyExpense.ExpenseDate,
+                                                 LocationDetailsId = dailyExpense.LocationDetailsId,
+                                                 RequestPath = Request.Path,
+                                                 CorrelationId = Request.Headers["X-Correlation-ID"].ToString()
+                                             },
+                                             dailyExpense.UserName,
+                                             dailyExpense.UserName,
+                                             true);
             }
             catch (Exception ex)
             {

@@ -27,6 +27,7 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
 builder.Services.AddTransient<IJsonWebTokenService, JsonWebTokenService>();
 
 builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddMemoryCache();
 
 //// JWT Token Generation Symmetric Key and Services
