@@ -98,7 +98,8 @@ builder.Services.AddCors(options =>
                 .WithOrigins(
                     "http://localhost:3000",
                     "https://www.tireinvfe.com",
-                    "http://www.tireinvfe.com"
+                    "http://www.tireinvfe.com",
+                    "http://www.apollotireinv.store"
                 )
                 .AllowAnyHeader()
                 .AllowAnyMethod();

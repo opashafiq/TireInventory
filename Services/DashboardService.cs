@@ -249,17 +249,15 @@ namespace TireInventory.Services
         }
 
         // =================================================================
-        // 3. MONTHLY SALES, LAST 12 MONTHS  (client requirement #2)
+        // 3. MONTHLY SALES
         // =================================================================
 
-        public async Task<List<MonthlySalesDto>> GetMonthlySalesAsync(int months, long? locationId, CancellationToken ct = default)
+        public async Task<List<MonthlySalesDto>> GetMonthlySalesAsync(DashboardFilter f, CancellationToken ct = default)
         {
-            if (months <= 0) months = 12;
+            if (f.To <= f.From) return new List<MonthlySalesDto>();
 
-            var today = DateTime.Today;
-            var from = new DateTime(today.Year, today.Month, 1).AddMonths(-(months - 1));
-            var to = new DateTime(today.Year, today.Month, 1).AddMonths(1);
-            var f = new DashboardFilter { From = from, To = to, LocationId = locationId };
+            var firstMonth = new DateTime(f.From.Year, f.From.Month, 1);
+            var lastDate = f.To.AddTicks(-1);
 
             var sales = await Invoices(f)
                 .GroupBy(i => new { i.tbim_InvDate.Year, i.tbim_InvDate.Month })
@@ -283,9 +281,8 @@ namespace TireInventory.Services
                 .ToListAsync(ct);
 
             var result = new List<MonthlySalesDto>();
-            for (var i = 0; i < months; i++)
+            for (var cursor = firstMonth; cursor <= lastDate; cursor = cursor.AddMonths(1))
             {
-                var cursor = from.AddMonths(i);
                 var s = sales.FirstOrDefault(x => x.Year == cursor.Year && x.Month == cursor.Month);
                 var c = collections.FirstOrDefault(x => x.Year == cursor.Year && x.Month == cursor.Month);
 
@@ -974,7 +971,7 @@ namespace TireInventory.Services
             {
                 Kpi = await GetKpiSummaryAsync(f, ct),
                 YearlySales = await GetYearlySalesAsync(5, f.LocationId, ct),
-                MonthlySales = await GetMonthlySalesAsync(12, f.LocationId, ct),
+                MonthlySales = await GetMonthlySalesAsync(f, ct),
                 DailySales = await GetDailySalesAsync(f, ct),
                 TopProducts = await GetTopProductsByValueAsync(10, f, ct),
                 //

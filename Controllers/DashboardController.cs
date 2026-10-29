@@ -33,7 +33,9 @@ namespace TireInventory.Controllers
 
         [HttpGet("overview")]
         public async Task<IActionResult> Overview(string? period, DateTime? from, DateTime? to, long? locationId, CancellationToken ct)
-            => Ok(await _dashboard.GetOverviewAsync(F(period, from, to, locationId), ct));
+        {
+            return Ok(await _dashboard.GetOverviewAsync(F(period, from, to, locationId), ct));
+        }
 
         // ---------- KPI cards ----------
 
@@ -48,8 +50,14 @@ namespace TireInventory.Controllers
             => Ok(await _dashboard.GetYearlySalesAsync(years, locationId, ct));
 
         [HttpGet("sales/monthly")]
-        public async Task<IActionResult> MonthlySales(int months = 12, long? locationId = null, CancellationToken ct = default)
-            => Ok(await _dashboard.GetMonthlySalesAsync(months, locationId, ct));
+        public async Task<IActionResult> MonthlySales(string? period = null, DateTime? from = null, DateTime? to = null, long? locationId = null, CancellationToken ct = default)
+        {
+            var filter = period is null && !from.HasValue && !to.HasValue
+                ? DashboardFilter.Resolve("last12m", null, null, locationId)
+                : F(period, from, to, locationId);
+
+            return Ok(await _dashboard.GetMonthlySalesAsync(filter, ct));
+        }
 
         [HttpGet("sales/daily")]
         public async Task<IActionResult> DailySales(string? period, DateTime? from, DateTime? to, long? locationId, CancellationToken ct)

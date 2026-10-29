@@ -74,6 +74,11 @@
                 case "last12m":
                     f = new DateTime(today.Year, today.Month, 1).AddMonths(-11); t = today.AddDays(1); break;
                 case "custom":
+                    if (!from.HasValue || !to.HasValue)
+                        throw new ArgumentException("When period=custom, both 'from' and 'to' must be provided.");
+                    f = from.Value.Date;
+                    t = to.Value.Date.AddDays(1);
+                    break;
                 default:
                     f = from?.Date ?? new DateTime(today.Year, today.Month, 1);
                     t = (to?.Date ?? today).AddDays(1);
