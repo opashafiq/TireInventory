@@ -301,7 +301,72 @@ namespace TireInventory.Services
         }
 
         // =================================================================
-        // 4. DAILY SALES  (current-month trend line)
+        // 4. WEEKLY SALES
+        // =================================================================
+
+        public async Task<List<WeeklySalesDto>> GetWeeklySalesAsync(DashboardFilter f, CancellationToken ct = default)
+        {
+            if (f.To <= f.From) return new List<WeeklySalesDto>();
+
+            var firstWeek = WeekStart(f.From);
+            var lastWeek = WeekStart(f.To.AddTicks(-1));
+
+            var salesByDay = await Invoices(f)
+                .GroupBy(i => i.tbim_InvDate.Date)
+                .Select(g => new
+                {
+                    Date = g.Key,
+                    NetSales = g.Sum(x => (decimal?)x.tbim_AdjTotal) ?? 0m,
+                    InvoiceCount = g.Count()
+                })
+                .ToListAsync(ct);
+
+            var collectionsByDay = await Payments(f)
+                .GroupBy(p => p.tbip_Date!.Value.Date)
+                .Select(g => new
+                {
+                    Date = g.Key,
+                    Amount = g.Sum(x => (decimal?)x.tbip_PayAmt) ?? 0m
+                })
+                .ToListAsync(ct);
+
+            var salesByWeek = salesByDay
+                .GroupBy(x => WeekStart(x.Date))
+                .ToDictionary(g => g.Key, g => new
+                {
+                    NetSales = g.Sum(x => x.NetSales),
+                    InvoiceCount = g.Sum(x => x.InvoiceCount)
+                });
+
+            var collectionsByWeek = collectionsByDay
+                .GroupBy(x => WeekStart(x.Date))
+                .ToDictionary(g => g.Key, g => g.Sum(x => x.Amount));
+
+            var result = new List<WeeklySalesDto>();
+            for (var cursor = firstWeek; cursor <= lastWeek; cursor = cursor.AddDays(7))
+            {
+                salesByWeek.TryGetValue(cursor, out var sales);
+                collectionsByWeek.TryGetValue(cursor, out var collected);
+
+                result.Add(new WeeklySalesDto
+                {
+                    WeekStart = cursor,
+                    WeekEnd = cursor.AddDays(6),
+                    Label = $"Week of {cursor.ToString("MMM dd, yyyy", CultureInfo.InvariantCulture)}",
+                    NetSales = sales?.NetSales ?? 0m,
+                    InvoiceCount = sales?.InvoiceCount ?? 0,
+                    Collected = collected
+                });
+            }
+
+            return result;
+        }
+
+        private static DateTime WeekStart(DateTime date)
+            => date.Date.AddDays(-(((int)date.DayOfWeek + 6) % 7));
+
+        // =================================================================
+        // 5. DAILY SALES  (current-month trend line)
         // =================================================================
 
         public async Task<List<DailySalesDto>> GetDailySalesAsync(DashboardFilter f, CancellationToken ct = default)
@@ -972,6 +1037,7 @@ namespace TireInventory.Services
                 Kpi = await GetKpiSummaryAsync(f, ct),
                 YearlySales = await GetYearlySalesAsync(5, f.LocationId, ct),
                 MonthlySales = await GetMonthlySalesAsync(f, ct),
+                WeeklySales = await GetWeeklySalesAsync(f, ct),
                 DailySales = await GetDailySalesAsync(f, ct),
                 TopProducts = await GetTopProductsByValueAsync(10, f, ct),
                 //

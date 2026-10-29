@@ -144,6 +144,16 @@
         public int InvoiceCount { get; set; }
     }
 
+    public class WeeklySalesDto
+    {
+        public DateTime WeekStart { get; set; }
+        public DateTime WeekEnd { get; set; }
+        public string Label { get; set; } = "";
+        public decimal NetSales { get; set; }
+        public decimal Collected { get; set; }
+        public int InvoiceCount { get; set; }
+    }
+
     public class DailySalesDto
     {
         public DateTime Date { get; set; }
@@ -294,6 +304,7 @@
         public KpiSummaryDto Kpi { get; set; } = new();
         public List<YearlySalesDto> YearlySales { get; set; } = new();
         public List<MonthlySalesDto> MonthlySales { get; set; } = new();
+        public List<WeeklySalesDto> WeeklySales { get; set; } = new();
         public List<DailySalesDto> DailySales { get; set; } = new();
         public List<TopProductDto> TopProducts { get; set; } = new();
         public List<TopCustomerDto> TopCustomers { get; set; } = new();

@@ -63,6 +63,10 @@ namespace TireInventory.Controllers
         public async Task<IActionResult> DailySales(string? period, DateTime? from, DateTime? to, long? locationId, CancellationToken ct)
             => Ok(await _dashboard.GetDailySalesAsync(F(period, from, to, locationId), ct));
 
+        [HttpGet("sales/weekly")]
+        public async Task<IActionResult> WeeklySales(string? period, DateTime? from, DateTime? to, long? locationId, CancellationToken ct)
+            => Ok(await _dashboard.GetWeeklySalesAsync(F(period, from, to, locationId), ct));
+
         [HttpGet("sales/heatmap")]
         public async Task<IActionResult> Heatmap(string? period, DateTime? from, DateTime? to, long? locationId, CancellationToken ct)
             => Ok(await _dashboard.GetSalesHeatmapAsync(F(period, from, to, locationId), ct));

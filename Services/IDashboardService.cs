@@ -10,6 +10,7 @@ namespace TireInventory.Services
         // Trends
         Task<List<YearlySalesDto>> GetYearlySalesAsync(int years, long? locationId, CancellationToken ct = default);
         Task<List<MonthlySalesDto>> GetMonthlySalesAsync(DashboardFilter filter, CancellationToken ct = default);
+        Task<List<WeeklySalesDto>> GetWeeklySalesAsync(DashboardFilter filter, CancellationToken ct = default);
         Task<List<DailySalesDto>> GetDailySalesAsync(DashboardFilter filter, CancellationToken ct = default);
         Task<List<HeatmapCellDto>> GetSalesHeatmapAsync(DashboardFilter filter, CancellationToken ct = default);
 
