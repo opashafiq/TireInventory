@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using TireInventory.Data;
@@ -22,6 +23,32 @@ namespace TireInventory.Controllers
         public ReportsController(ApplicationDBContext context)
         {
             _context = context;
+        }
+
+        [HttpGet("GetdailyReport")]
+        public async Task<ActionResult<List<DailyReportDto>>> GetdailyReport([FromQuery] DateTime? StartDate = null)
+        {
+            var reportRows = await _context.Database
+                .SqlQuery<DailyReportRow>($"EXEC dbo.Sp_DailyReport @StartDate = {StartDate}")
+                .ToListAsync();
+
+            var result = reportRows.Select(row => new DailyReportDto
+            {
+                Date = row.Date.ToString("MM.dd.yyyy", CultureInfo.InvariantCulture),
+                CategoryName = row.CategoryName,
+                TotalAmount = row.TotalAmount,
+                Paydate = row.Paydate?.ToString("MM.dd.yyyy", CultureInfo.InvariantCulture)
+            }).ToList();
+
+            return Ok(result);
+        }
+
+        private class DailyReportRow
+        {
+            public DateTime Date { get; set; }
+            public string CategoryName { get; set; }
+            public decimal TotalAmount { get; set; }
+            public DateTime? Paydate { get; set; }
         }
 
         /// <summary>
