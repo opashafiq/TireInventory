@@ -51,6 +51,194 @@ namespace TireInventory.Controllers
             public DateTime? Paydate { get; set; }
         }
 
+        [HttpGet("GetdailyReportRange")]
+        public async Task<ActionResult<List<DailyReportRangeDto>>> GetdailyReportRange(
+            [FromQuery] DateTime? StartDate = null,
+            [FromQuery] DateTime? EndDate = null)
+        {
+            var reportRows = await _context.Database
+                .SqlQuery<DailyReportRangeRow>($"EXEC dbo.Sp_DailyReportDateRange @StartDate = {StartDate}, @EndDate = {EndDate}")
+                .ToListAsync();
+
+            var result = reportRows.Select(row => new DailyReportRangeDto
+            {
+                StartDate = row.StartDate.ToString("MM.dd.yyyy", CultureInfo.InvariantCulture),
+                CategoryName = row.CategoryName,
+                TotalAmount = row.TotalAmount,
+                Paydate = row.Paydate?.ToString("MM.dd.yyyy", CultureInfo.InvariantCulture),
+                EndDate = row.EndDate.ToString("MM.dd.yyyy", CultureInfo.InvariantCulture)
+            }).ToList();
+
+            return Ok(result);
+        }
+
+        private class DailyReportRangeRow
+        {
+            public DateTime StartDate { get; set; }
+            public string CategoryName { get; set; }
+            public decimal TotalAmount { get; set; }
+            public DateTime? Paydate { get; set; }
+            public DateTime EndDate { get; set; }
+        }
+
+        [HttpGet("GetdailyWeeklyReport")]
+        public async Task<ActionResult<List<DailyWeeklyReportDto>>> GetdailyWeeklyReport(
+            [FromQuery] DateTime? StartDate,
+            [FromQuery] DateTime? EndDate)
+        {
+            var reportRows = await _context.Database
+                .SqlQuery<DailyWeeklyReportRow>($"EXEC dbo.Sp_WeeklyReport @StartDate = {StartDate}, @EndDate = {EndDate}")
+                .ToListAsync();
+
+            var result = reportRows.Select(row => new DailyWeeklyReportDto
+            {
+                Date = row.Date.ToString("MM.dd.yyyy", CultureInfo.InvariantCulture),
+                Credit = row.Credit,
+                Cash = row.Cash,
+                CreditCardVisa = row.CreditCardVisa,
+                DEBITCARD = row.DEBITCARD,
+                CHECKElectReg = row.CHECKElectReg,
+                CreditCardMaster = row.CreditCardMaster,
+                CreditCardDisc = row.CreditCardDisc,
+                CreditCardAmex = row.CreditCardAmex,
+                CrestFinance = row.CrestFinance,
+                ProgFinance = row.ProgFinance
+            }).ToList();
+
+            return Ok(result);
+        }
+
+        private class DailyWeeklyReportRow
+        {
+            public DateTime Date { get; set; }
+            public decimal Credit { get; set; }
+            public decimal Cash { get; set; }
+            public decimal CreditCardVisa { get; set; }
+            public decimal DEBITCARD { get; set; }
+            public decimal CHECKElectReg { get; set; }
+            public decimal CreditCardMaster { get; set; }
+            public decimal CreditCardDisc { get; set; }
+            public decimal CreditCardAmex { get; set; }
+            public decimal CrestFinance { get; set; }
+            public decimal ProgFinance { get; set; }
+        }
+
+        [HttpGet("GetCheckRegisterReport")]
+        public async Task<ActionResult<List<CheckRegisterReportDto>>> GetCheckRegisterReport(
+            [FromQuery] DateTime? StartDate = null,
+            [FromQuery] DateTime? EndDate = null)
+        {
+            var reportRows = await _context.Database
+                .SqlQuery<CheckRegisterReportRow>($"EXEC dbo.Sp_CheckRegister @StartDate = {StartDate}, @EndDate = {EndDate}")
+                .ToListAsync();
+
+            var result = reportRows.Select(row => new CheckRegisterReportDto
+            {
+                tbip_Date = row.tbip_Date?.ToString("MM.dd.yyyy", CultureInfo.InvariantCulture),
+                tbpn_PaymentName = row.tbpn_PaymentName,
+                tbip_PayAmt = row.tbip_PayAmt
+            }).ToList();
+
+            return Ok(result);
+        }
+
+        private class CheckRegisterReportRow
+        {
+            public DateTime? tbip_Date { get; set; }
+            public string tbpn_PaymentName { get; set; }
+            public decimal tbip_PayAmt { get; set; }
+        }
+
+        [HttpGet("GetInvoiceData")]
+        public async Task<ActionResult<List<InvoiceDataDto>>> GetInvoiceData(
+            [FromQuery] DateTime? StartDate = null,
+            [FromQuery] DateTime? EndDate = null)
+        {
+            var reportRows = await _context.Database
+                .SqlQuery<InvoiceDataRow>($"EXEC dbo.Sp_InvoiceData @StartDate = {StartDate}, @EndDate = {EndDate}")
+                .ToListAsync();
+
+            var result = reportRows.Select(row => new InvoiceDataDto
+            {
+                tbip_Paymentname = row.tbip_Paymentname,
+                InvoiceId = row.InvoiceId,
+                Name = row.Name,
+                InvoiceDate = row.InvoiceDate.ToString("MM.dd.yyyy", CultureInfo.InvariantCulture),
+                Total = row.Total,
+                CompanyName = row.CompanyName,
+                TaxNumber = row.TaxNumber,
+                Phone = row.Phone,
+                Address = row.Address,
+                Vehicle = row.Vehicle,
+                Model = row.Model,
+                Year = row.Year,
+                Odometer = row.Odometer,
+                TreadDepth = row.TreadDepth,
+                License = row.License,
+                Notes = row.Notes
+            }).ToList();
+
+            return Ok(result);
+        }
+
+        private class InvoiceDataRow
+        {
+            public string? tbip_Paymentname { get; set; }
+            public long InvoiceId { get; set; }
+            public string? Name { get; set; }
+            public DateTime InvoiceDate { get; set; }
+            public decimal Total { get; set; }
+            public string? CompanyName { get; set; }
+            public string? TaxNumber { get; set; }
+            public string? Phone { get; set; }
+            public string? Address { get; set; }
+            public string? Vehicle { get; set; }
+            public string? Model { get; set; }
+            public string? Year { get; set; }
+            public string? Odometer { get; set; }
+            public string? TreadDepth { get; set; }
+            public string? License { get; set; }
+            public string? Notes { get; set; }
+        }
+
+        [HttpGet("GetPendingAmount")]
+        public async Task<ActionResult<List<PendingAmountDto>>> GetPendingAmount()
+        {
+            var reportRows = await _context.Database
+                .SqlQuery<PendingAmountRow>($"EXEC dbo.Sp_PendingAmt")
+                .ToListAsync();
+
+            var result = reportRows.Select(row => new PendingAmountDto
+            {
+                tbip_Paymentname = row.tbip_Paymentname,
+                Id = row.Id,
+                tbim_InvoiceIdRad = row.tbim_InvoiceIdRad,
+                tbim_Name = row.tbim_Name,
+                tbti_ComName = row.tbti_ComName,
+                tbim_InvDate = row.tbim_InvDate.ToString("MM.dd.yyyy", CultureInfo.InvariantCulture),
+                tbim_Total = row.tbim_Total,
+                tbim_PaidAmt = row.tbim_PaidAmt,
+                tbim_PayInfo = row.tbim_PayInfo,
+                PayInfo = row.PayInfo
+            }).ToList();
+
+            return Ok(result);
+        }
+
+        private class PendingAmountRow
+        {
+            public string? tbip_Paymentname { get; set; }
+            public long Id { get; set; }
+            public long tbim_InvoiceIdRad { get; set; }
+            public string? tbim_Name { get; set; }
+            public string? tbti_ComName { get; set; }
+            public DateTime tbim_InvDate { get; set; }
+            public decimal tbim_Total { get; set; }
+            public decimal tbim_PaidAmt { get; set; }
+            public string? tbim_PayInfo { get; set; }
+            public string? PayInfo { get; set; }
+        }
+
         /// <summary>
         /// Returns ItemMaster rows for the specified CategoryId joined with Departments as OURPTotalDto.
         /// CategoryId matches ItemMaster.tbim_ItemCategoryId (department Id).
